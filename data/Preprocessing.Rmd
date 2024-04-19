@@ -1,0 +1,14 @@
+```{r csv function}
+
+library(tidyverse)
+
+load_csv <- function(csv_name){
+  
+  data <- read_csv(toString(paste(csv_name, ".csv.gz", sep="")))
+  # data[data$runtimeMinutes == "\\N", runtimeMinutes] = NA
+  save(data, file = toString(paste(csv_name, ".rda", sep="")))
+}
+
+load_csv("title_basics_sample")
+title_basics <- load("title_basics_sample.rda")
+```
