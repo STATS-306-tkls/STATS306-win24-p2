@@ -6,10 +6,10 @@ load_csv <- function(csv_name){
   
   data <- read_csv(toString(paste(csv_name, ".csv.gz", sep="")))
   #data[data$runtimeMinutes == "\\N", "runtimeMinutes"] <- NA
-  #for (col in colnames(data)){
-  #  data[data[,col] == "\\N", col] = NA
-  #}
-  return ()
+  for (col in colnames(data)){
+    data[data[,col] == "\\N", col] = NA
+  }
+  return (data)
   
   #save(data, file = toString(paste(csv_name, ".rda", sep="")))
 }
