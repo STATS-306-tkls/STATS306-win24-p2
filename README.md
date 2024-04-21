@@ -147,3 +147,5 @@ You will complete this portion at a later time.
 Each team member should add a brief biography (year, program, interests). You may add a photo, but it is not required.
 
 Lynn Lam is a senior in the School of Information minoring in Statistics. I am studying Information Analysis and will be graduating after 5 years of university after next winter. I enjoy being a coffee snob, playing video games (Baldur's Gate 3 right now!), and watching horror movies.
+
+Shuxian Chen is a senior who majoring in Statistics & Data Science. I enjoy reading novels and playing video games.
