@@ -16,7 +16,7 @@ library(tidyverse)
 
 ## Investigating the Internet Movie Database (IMDB)
 
-The [Internet Movie Database (IMDb)]() contains information on millions of movies and television programs. They offer several [non-commercial use datasets](https://developer.imdb.com/non-commercial-datasets/) (documentation link). For this project we will analyze a **sample** of 100,000 titles from the IMDBb. 
+The [Internet Movie Database (IMDb)]() contains information on millions of movies and television programs. They offer several [non-commercial use datasets](https://developer.imdb.com/non-commercial-datasets/) (documentation link). For this proj+ect we will analyze a **sample** of 100,000 titles from the IMDBb. 
 
 
 ## Part I: Preprocessing
