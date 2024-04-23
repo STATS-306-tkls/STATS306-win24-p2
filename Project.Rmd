@@ -27,8 +27,14 @@ The [Internet Movie Database (IMDb)]() contains information on millions of movie
   * The function should take the file name (without the ".csv.gz" portion) as an argument
   * The function should load the appropriate `.csv.gz` file.
   * Make sure that all "\\N" values (which IMDB uses to indicate missing values) are turned into proper NA values in R
-  * Write the resulting table to a file called "FILENAME.rda" (where FILENAME is the argument to the function) using the `save()` function.
-* Run the function on all of the `*_sample.csv.gz` files to created processed `.rda` files. You can load these using the `load()` function.
+  * The function should return the table.
+* For each of the `.csv.gz` files, use your function to load the table, then save it into a variable (e.g. `name_basics <- preprocess("name_basics")`) and use the `save` function (e.g., `save(name_basics, "name_basics.rda")`.
+* Run the function on all of the `*_sample.csv.gz` files to created processed `.rda` files.
+* In your other files, you can load these using the `load("data/FILENAME.rda")` function.
+
+```{r}
+
+```
 
 ## Part II: EDA of individual tables
 
@@ -36,26 +42,83 @@ The [Internet Movie Database (IMDb)]() contains information on millions of movie
   * For each quantitative column, provide some summary statistics
   * For any character columns, decided if they are actually representing factors/categorical data with a moderate number of columns. If so report the distributions for these variables.
   * Provide a plot for each table. Across all of the plots, try to show off the most possible different ggplot features (`geoms_` functions, `stat_` functions, coordinate systems, facets, use of several variables, annotations)
+```{r}
+# Using `titles_basics` as an example:
+summary(titles_basics)  # General summary statistics
+
+# For quantitative columns:
+titles_basics %>% summarise(across(where(is.numeric), ~list(mean = mean(., na.rm = TRUE), sd = sd(., na.rm = TRUE))))
+
+# For categorical columns:
+titles_basics %>% count(column_name)  # Replace `column_name` with actual column names
+ggplot(titles_basics) +
+  geom_histogram(aes(x = runtimeMinutes), binwidth = 10) +
+  facet_wrap(~genre) +
+  theme_minimal() +
+  labs(title = "Distribution of Runtime by Genre")
+
+```
 * For the `titles_basics` table
   * use two different variables to group and explore how `runtimeMinutes` varies for these different groups. Produce appropriate summaries.
   * How many titles are known for name that is different than the original release name?
   * Graph the conditional distributions of release year based on the previous results. Comment on any trends you observe.
+```{r}
+titles_basics %>%
+  group_by(genre, region) %>%
+  summarise(mean_runtime = mean(runtimeMinutes, na.rm = TRUE), .groups = 'drop')
+different_names_count <- titles_basics %>%
+  filter(originalTitle != primaryTitle) %>%
+  nrow()
+
+```
 * For the ratings, use the `cut` function to break the data into three groups based on the average ratings. Are higher rated titles rated more often or less often than lower rated titles? 
+```{r}
+ratings <- ratings %>%
+  mutate(rating_group = cut(averageRating, breaks = c(0, 5, 8, 10), labels = c("Low", "Medium", "High")))
+
+ratings %>%
+  group_by(rating_group) %>%
+  summarise(avg_numVotes = mean(numVotes), .groups = 'drop')
+```
 * For the names table, 
   * Count the number of titles each person is known for and plot this distribution.
   * investigate the age of cast members
       * Group the data into living and deceased cast members. 
       * For deceased cast members, provide a graph that shows the distribution of ages.
       * Do the same for living cast members.
+      
+```{r}
+names_table %>%
+  ggplot(aes(x = knownForTitles)) +
+  geom_histogram() +
+  labs(title = "Distribution of Number of Titles Known For Each Person")
+# Assuming you have birth and death year
+names_table %>%
+  mutate(age = ifelse(is.na(deathYear), 2023 - birthYear, deathYear - birthYear)) %>%
+  ggplot(aes(x = age, color = is.na(deathYear))) +
+  geom_density() +
+  labs(title = "Distribution of Ages for Living vs. Deceased Cast Members")
+```
 * Find all the actors with first names "Tom", "Thomas", "Thom" or "Tomas". How many are there?
+```{r}
+tom_actors_count <- names_table %>%
+  filter(grepl("^(Tom|Thomas|Thom|Tomas)\\b", primaryName)) %>%
+  nrow()
+```
+
 * How many titles use alliteration (i.e., all words in the title start with the same letter)?
+
+```{r}
+alliteration_count <- titles_basics %>%
+  filter(grepl("^([a-zA-Z])\\b.*\\1", primaryTitle, perl = TRUE)) %>%
+  nrow()
+```
 
 ## Part III: Pivoting
 
-* Create a new version of the `titles_basics` table that has one row for each title-genre combination.
+* Create a new version of the `titles_basics` table that has one row for each title-genre combination. See the `separate_rows` function for a useful too here.
 * Using that table, create a line plot of the count different genres over time (you may limit this to the most common genres if you wish).
 * Pivot the table to be a wide table with one column for each genre. Use this table to find the most common combination of genres.
-** Corrected: use separate_rows
 
 ```{r}
 #combine titles
@@ -86,6 +149,7 @@ title_pivoted %>%
   xlab("Years") +
   ylab("Genre Frequency")
 ```
+
 ```{r}
 #* Pivot the table to be a wide table with one column for each genre. Use this table to find the most common combination of genres.
 #pivot table for genres
@@ -98,6 +162,7 @@ title_pivoted %>%
 title_pivoted %>% separate_rows(genres) #i will come back to this TODO
 # title_basics <- pivot_wider(title_basics, names_from = genres, id_cols = rowID, values_from = genres, values_fn = length)
 ```
+* Use the `model.matrix` function in the following way: `model.matrix(yourtalltable, ~ genre - 1)` to create a wide table with one column for each genre. Use this table to find the most common pair of genres (hint: use the `cor` function or produce facet plots)
 
 ## Part IV: Joining Tables
 
@@ -133,3 +198,11 @@ Using results from the previous section, create a shiny application that allows 
 ### Application 2
 
 In the principals table, there is a `category` column. Use this column as a primary filter to allow users to then select specific job categories. After select the specific job categories, display information from another table.
+
+## Extra Credit: 6 Degrees of Kevin Bacon
+
+Create an app to allow users to play [Six Degrees of Kevin Bacon](https://en.wikipedia.org/wiki/Six_Degrees_of_Kevin_Bacon#:~:text=Six%20Degrees%20of%20Kevin%20Bacon%20or%20Bacon's%20Law%20is%20a,ultimately%20leads%20to%20prolific%20American).
+
+Create a Shiny application where a person can type the primary title of movie or TV show. Then have app show all the people who had a role in the show. Let the user select a person in that cast and show all other people who have been in a title with that person. Repeat up to 6 times. If "Kevin Bacon" (`nconst == 'nm0000102'`) ever appears in the list, let the player know they have won! If they click more than 6 times, let them know they have lost.
+
+

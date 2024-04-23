@@ -1,14 +1,12 @@
 ```{r csv function, message=FALSE, warning=FALSE}
-load_csv_and_assign <- function(file_base_name) {
-  full_path <- paste0(file_base_name, "_sample.csv.gz")
-  data <- read.csv(full_path, na.strings = "\\N")
-  save_file_path <- paste0(file_base_name, ".rda")
-  save(data, file = save_file_path)
-  load(save_file_path)
-  assign(file_base_name, data, envir = .GlobalEnv)
+load_csv <- function(csv_name){
+  path <- paste0(csv_name, "_sample.csv.gz")
+  data <- read_csv(file=path, na = "\\N")
+  rda_path <- paste0(csv_name, ".rda")
+  save(data, file = rda_path)
 }
-
+  
 files <- list.files(pattern = "_sample\\.csv\\.gz$", full.names = FALSE)
 names <- gsub("_sample\\.csv\\.gz$", "", files)
-lapply(names, load_csv_and_assign)
+lapply(names, load_csv)
 ```
