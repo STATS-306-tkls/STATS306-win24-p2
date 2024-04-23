@@ -30,25 +30,87 @@ The [Internet Movie Database (IMDb)]() contains information on millions of movie
   * Write the resulting table to a file called "FILENAME.rda" (where FILENAME is the argument to the function) using the `save()` function.
 * Run the function on all of the `*_sample.csv.gz` files to created processed `.rda` files. You can load these using the `load()` function.
 
+```{r}
+
+```
+
 ## Part II: EDA of individual tables
 
 * For each of the 4 tables, perform basic exploratory data analysis. Report the following information:
   * For each quantitative column, provide some summary statistics
   * For any character columns, decided if they are actually representing factors/categorical data with a moderate number of columns. If so report the distributions for these variables.
   * Provide a plot for each table. Across all of the plots, try to show off the most possible different ggplot features (`geoms_` functions, `stat_` functions, coordinate systems, facets, use of several variables, annotations)
+```{r}
+# Using `titles_basics` as an example:
+summary(titles_basics)  # General summary statistics
+
+# For quantitative columns:
+titles_basics %>% summarise(across(where(is.numeric), ~list(mean = mean(., na.rm = TRUE), sd = sd(., na.rm = TRUE))))
+
+# For categorical columns:
+titles_basics %>% count(column_name)  # Replace `column_name` with actual column names
+ggplot(titles_basics) +
+  geom_histogram(aes(x = runtimeMinutes), binwidth = 10) +
+  facet_wrap(~genre) +
+  theme_minimal() +
+  labs(title = "Distribution of Runtime by Genre")
+
+```
 * For the `titles_basics` table
   * use two different variables to group and explore how `runtimeMinutes` varies for these different groups. Produce appropriate summaries.
   * How many titles are known for name that is different than the original release name?
   * Graph the conditional distributions of release year based on the previous results. Comment on any trends you observe.
+```{r}
+titles_basics %>%
+  group_by(genre, region) %>%
+  summarise(mean_runtime = mean(runtimeMinutes, na.rm = TRUE), .groups = 'drop')
+different_names_count <- titles_basics %>%
+  filter(originalTitle != primaryTitle) %>%
+  nrow()
+
+```
 * For the ratings, use the `cut` function to break the data into three groups based on the average ratings. Are higher rated titles rated more often or less often than lower rated titles? 
+```{r}
+ratings <- ratings %>%
+  mutate(rating_group = cut(averageRating, breaks = c(0, 5, 8, 10), labels = c("Low", "Medium", "High")))
+
+ratings %>%
+  group_by(rating_group) %>%
+  summarise(avg_numVotes = mean(numVotes), .groups = 'drop')
+```
 * For the names table, 
   * Count the number of titles each person is known for and plot this distribution.
   * investigate the age of cast members
       * Group the data into living and deceased cast members. 
       * For deceased cast members, provide a graph that shows the distribution of ages.
       * Do the same for living cast members.
+      
+```{r}
+names_table %>%
+  ggplot(aes(x = knownForTitles)) +
+  geom_histogram() +
+  labs(title = "Distribution of Number of Titles Known For Each Person")
+# Assuming you have birth and death year
+names_table %>%
+  mutate(age = ifelse(is.na(deathYear), 2023 - birthYear, deathYear - birthYear)) %>%
+  ggplot(aes(x = age, color = is.na(deathYear))) +
+  geom_density() +
+  labs(title = "Distribution of Ages for Living vs. Deceased Cast Members")
+```
 * Find all the actors with first names "Tom", "Thomas", "Thom" or "Tomas". How many are there?
+```{r}
+tom_actors_count <- names_table %>%
+  filter(grepl("^(Tom|Thomas|Thom|Tomas)\\b", primaryName)) %>%
+  nrow()
+```
+
 * How many titles use alliteration (i.e., all words in the title start with the same letter)?
+
+```{r}
+alliteration_count <- titles_basics %>%
+  filter(grepl("^([a-zA-Z])\\b.*\\1", primaryTitle, perl = TRUE)) %>%
+  nrow()
+```
 
 ## Part III: Pivoting
 
