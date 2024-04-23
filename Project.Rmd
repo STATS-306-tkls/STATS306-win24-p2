@@ -55,6 +55,49 @@ The [Internet Movie Database (IMDb)]() contains information on millions of movie
 * Create a new version of the `titles_basics` table that has one row for each title-genre combination.
 * Using that table, create a line plot of the count different genres over time (you may limit this to the most common genres if you wish).
 * Pivot the table to be a wide table with one column for each genre. Use this table to find the most common combination of genres.
+** Corrected: use separate_rows
+
+```{r}
+#combine titles
+title_pivoted <- pivot_longer(title_basics, cols = c("primaryTitle", "originalTitle"), 
+                             names_to = "types", values_to = "title")
+#get only distinct titles
+title_pivoted <- 
+  title_pivoted %>% 
+  distinct(title, .keep_all = TRUE)
+
+#separate genres
+title_pivoted <- separate_rows(title_pivoted, genres)
+```
+
+```{r}
+#create line plot of genres over time
+#all plots looked too busy, so only the most common genres were kept
+title_pivoted %>% 
+  drop_na(startYear, genres) %>% 
+  filter(genres %in% c("Action", "Comedy", "Documentary", "Drama", "Reality", "Romance", "Short", "TV")) %>% 
+  group_by(startYear, genres) %>% 
+  mutate(countPerYear = n()) %>% 
+  ggplot(aes(x = startYear, y = countPerYear, color = genres)) +
+  geom_line() +
+  facet_wrap(~ genres) +
+  ggtitle("Count of Genres Over Time From the title_basics Table") +
+  theme_bw() +
+  xlab("Years") +
+  ylab("Genre Frequency")
+```
+```{r}
+#* Pivot the table to be a wide table with one column for each genre. Use this table to find the most common combination of genres.
+#pivot table for genres
+
+#title_basics$rowID <- seq_len(nrow(title_basics))
+#counts <- title_basics %>% group_by(title) %>% mutate(count=n()) %>% ungroup()
+#counts %>% pivot_wider(id_cols=rowID, names_from=genres, values_from=count, values_fill=0)
+#this was just me misunderstanding the question but i want to keep this code just in case
+
+title_pivoted %>% separate_rows(genres) #i will come back to this TODO
+# title_basics <- pivot_wider(title_basics, names_from = genres, id_cols = rowID, values_from = genres, values_fn = length)
+```
 
 ## Part IV: Joining Tables
 
@@ -67,7 +110,12 @@ The [Internet Movie Database (IMDb)]() contains information on millions of movie
   * Find the proportions of genres for the the titles that include the top 10 rated principals.
   * Graph ratings against years. What trends do you see?
 * Create a table with one row for each person in the `name_basics` table and title they are known for. Join this to the ratings table to get the ratings of the "known for" films. Find the person (or people) who have the highest median known for rating.
-* 
+
+```{r}
+merge(title_pivoted, title_ratings) -> basics_ratings
+
+
+```
 
 ## Part V: Profiling and Parallel Processing
 
