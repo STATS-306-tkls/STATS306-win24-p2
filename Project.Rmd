@@ -12,6 +12,8 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
+#library(corrplot)
+
 ```
 
 ## Investigating the Internet Movie Database (IMDB)
@@ -44,14 +46,14 @@ The [Internet Movie Database (IMDb)]() contains information on millions of movie
   * Provide a plot for each table. Across all of the plots, try to show off the most possible different ggplot features (`geoms_` functions, `stat_` functions, coordinate systems, facets, use of several variables, annotations)
 ```{r}
 # Using `titles_basics` as an example:
-summary(titles_basics)  # General summary statistics
+summary(title_basics)  # General summary statistics
 
 # For quantitative columns:
-titles_basics %>% summarise(across(where(is.numeric), ~list(mean = mean(., na.rm = TRUE), sd = sd(., na.rm = TRUE))))
+title_basics %>% summarise(across(where(is.numeric), ~list(mean = mean(., na.rm = TRUE), sd = sd(., na.rm = TRUE))))
 
 # For categorical columns:
-titles_basics %>% count(column_name)  # Replace `column_name` with actual column names
-ggplot(titles_basics) +
+title_basics %>% count(column_name)  # Replace `column_name` with actual column names
+ggplot(title_basics) +
   geom_histogram(aes(x = runtimeMinutes), binwidth = 10) +
   facet_wrap(~genre) +
   theme_minimal() +
@@ -63,10 +65,10 @@ ggplot(titles_basics) +
   * How many titles are known for name that is different than the original release name?
   * Graph the conditional distributions of release year based on the previous results. Comment on any trends you observe.
 ```{r}
-titles_basics %>%
+title_basics %>%
   group_by(genre, region) %>%
   summarise(mean_runtime = mean(runtimeMinutes, na.rm = TRUE), .groups = 'drop')
-different_names_count <- titles_basics %>%
+different_names_count <- title_basics %>%
   filter(originalTitle != primaryTitle) %>%
   nrow()
 
@@ -109,7 +111,7 @@ tom_actors_count <- names_table %>%
 * How many titles use alliteration (i.e., all words in the title start with the same letter)?
 
 ```{r}
-alliteration_count <- titles_basics %>%
+alliteration_count <- title_basics %>%
   filter(grepl("^([a-zA-Z])\\b.*\\1", primaryTitle, perl = TRUE)) %>%
   nrow()
 ```
@@ -119,6 +121,7 @@ alliteration_count <- titles_basics %>%
 * Create a new version of the `titles_basics` table that has one row for each title-genre combination. See the `separate_rows` function for a useful too here.
 * Using that table, create a line plot of the count different genres over time (you may limit this to the most common genres if you wish).
 * Pivot the table to be a wide table with one column for each genre. Use this table to find the most common combination of genres.
+* Use the `model.matrix` function in the following way: `model.matrix(yourtalltable, ~ genre - 1)` to create a wide table with one column for each genre. Use this table to find the most common pair of genres (hint: use the `cor` function or produce facet plots)
 
 ```{r}
 #combine titles
@@ -162,13 +165,19 @@ title_pivoted %>%
 title_pivoted %>% separate_rows(genres) #i will come back to this TODO
 # title_basics <- pivot_wider(title_basics, names_from = genres, id_cols = rowID, values_from = genres, values_fn = length)
 ```
-* Use the `model.matrix` function in the following way: `model.matrix(yourtalltable, ~ genre - 1)` to create a wide table with one column for each genre. Use this table to find the most common pair of genres (hint: use the `cor` function or produce facet plots)
+
+```{r}
+#* Use the `model.matrix` function in the following way: `model.matrix(yourtalltable, ~ genre - 1)` to create a wide table with one column for each genre. Use this table to find the most common pair of genres (hint: use the `cor` function or produce facet plots)
+model.matrix(~ genres - 1, title_pivoted) -> wide_genres
+#cor(wide_genres) %>% round(4)
+#corrplot(wide_genres, method = "color")
+```
 
 ## Part IV: Joining Tables
 
 * Join the table with one title-genre per row from the previous section with the ratings table.
   * What is the highest rated genre? What is the lowest rated genre?
-  * Using stacked bar charts, investigate the proportions of different genres over time. Are any incresing or decreasing? Use factor functions to help make the plots easier to read.
+  * Using stacked bar charts, investigate the proportions of different genres over time. Are any increasing or decreasing? Use factor functions to help make the plots easier to read.
 * Join the `title_basics` with the ratings table. Have the number of ratings changed over time (based on release year)? Display graphically but also answer with numerical results.
 * Join the names with the ratings and the principals table. 
   * Group by individual people, find the top ten people based on the median rating of the titles they appear in.
@@ -177,9 +186,85 @@ title_pivoted %>% separate_rows(genres) #i will come back to this TODO
 * Create a table with one row for each person in the `name_basics` table and title they are known for. Join this to the ratings table to get the ratings of the "known for" films. Find the person (or people) who have the highest median known for rating.
 
 ```{r}
+#Join the table with one title-genre per row from the previous section with the ratings table.
+
 merge(title_pivoted, title_ratings) -> basics_ratings
+basics_ratings %>% 
+  group_by(genres) %>% 
+  summarize(ratings = sum(averageRating)) %>% 
+  arrange(desc(ratings))
+```
+
+The highest rated genre on average is "Drama". The lowest rated genre on average is "Noir" on average, not counting "NA" values.
+
+```{r}
+#Using stacked bar charts, investigate the proportions of different genres over time. Are any increasing or decreasing? Use factor functions to help make the plots easier to read.
+
+basics_ratings <-
+  basics_ratings %>% 
+  mutate(genre_fct = fct_collapse(basics_ratings$genres, 
+               Realistic = c("Drama", "Comedy", "Crime", "Action", "Mystery", "Romance", "War"),
+               Fiction = c("Adventure", "Fantasy", "Horror", "Western", "Thriller", "Animation", "Sci", "Fi"),
+               NotAvailable = c("NA"),
+               RealLife = c("Documentary", "News", "Biography", "History", "Sport", "Talk", "Reality"),
+               Other = c("Short", "Music", "Family", "Musical"),
+               Type = c("Film", "Noir", "Game", "Show", "Adult", "TV")
+               ))
 
 
+ggplot(basics_ratings, aes(x = startYear, fill = genre_fct)) +
+  geom_bar(position = "fill") +
+  ggtitle("Proportions of Genres Over Time") +
+  xlab("Years") +
+  ylab("Proportions of Genres")
+```
+"Realistic" genres - "Drama", "Comedy", "Crime", "Action", "Mystery", "Romance", and "War" - increased over time. "Fiction" genres - "Adventure", "Fantasy", "Horror", "Western", "Thriller", "Animation", and "Sci-Fi" - also increased. Only the "Other" category - "Short", "Music", "Family", and "Musical" - seemed to decrease.
+
+```{r}
+#Join the `title_basics` with the ratings table. Have the number of ratings changed over time (based on release year)? Display graphically but also answer with numerical results.
+
+#title_basics and title_ratings are already joined in the basics_ratings table from the previous prompt
+basics_ratings %>% 
+  group_by(startYear) %>% 
+  summarize(rating = sum(averageRating))
+```
+```{r}
+# Join the names with the ratings and the principals table. 
+ratings_principles <- merge(title_ratings, title_principals)
+```
+
+```{r}
+# Group by individual people, find the top ten people based on the median rating of the titles they appear in.
+ratings_principles %>% 
+  group_by(characters) %>% 
+  summarize(medRating = median(averageRating)) %>% 
+  arrange(desc(medRating))
+```
+
+```{r}
+# Find the proportions of genres for the the titles that include the top 10 rated principals.
+
+```
+
+```{r}
+# Graph ratings against years. What trends do you see?
+#didnt we just do this?
+```
+
+```{r}
+#Create a table with one row for each person in the `name_basics` table and title they are known for
+longer_name <- separate_rows(name_basics, knownForTitles)
+
+#Join this to the ratings table to get the ratings of the "known for" films
+name_ratings <- merge(longer_name, title_ratings, by.x = "knownForTitles", by.y = "tconst")
+```
+
+```{r}
+#Find the person (or people) who have the highest median known for rating
+name_ratings %>% 
+  group_by(primaryName) %>% 
+  summarize(medRatings = median(averageRating)) %>% 
+  arrange(desc(medRatings))
 ```
 
 ## Part V: Profiling and Parallel Processing
