@@ -262,6 +262,8 @@ ggplot(basics_ratings, aes(x = startYear, fill = genre_fct)) +
   ggtitle("Proportions of Genres Over Time") +
   xlab("Years") +
   ylab("Proportions of Genres")
+
+#WHAT IS RED ON GRAPH - MISSING LABEL (DRAMA?)
 ```
 "Realistic" genres - "Drama", "Comedy", "Crime", "Action", "Mystery", "Romance", and "War" - increased over time. "Fiction" genres - "Adventure", "Fantasy", "Horror", "Western", "Thriller", "Animation", and "Sci-Fi" - also increased. Only the "Other" category - "Short", "Music", "Family", and "Musical" - seemed to decrease.
 
