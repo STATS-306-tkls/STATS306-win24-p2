@@ -146,9 +146,10 @@ names_table %>%
     
 * Find all the actors with first names "Tom", "Thomas", "Thom" or "Tomas". How many are there?
 ```{r}
-tom_actors_count <- names_table %>%
+tom_actors_count <- names_basics %>%
   filter(grepl("^(Tom|Thomas|Thom|Tomas)\\b", primaryName)) %>%
   nrow()
+tom_actors_count
 ```
 
 * How many titles use alliteration (i.e., all words in the title start with the same letter)?
@@ -157,6 +158,7 @@ tom_actors_count <- names_table %>%
 alliteration_count <- title_basics %>%
   filter(grepl("^([a-zA-Z])\\b.*\\1", primaryTitle, perl = TRUE)) %>%
   nrow()
+alliteration_count
 ```
 
 ## Part III: Pivoting
