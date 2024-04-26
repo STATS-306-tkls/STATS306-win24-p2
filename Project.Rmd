@@ -12,8 +12,6 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
-#library(corrplot)
-
 ```
 
 ## Investigating the Internet Movie Database (IMDB)
@@ -154,23 +152,42 @@ title_pivoted %>%
 ```
 
 ```{r}
-#* Pivot the table to be a wide table with one column for each genre. Use this table to find the most common combination of genres.
-#pivot table for genres
+# Pivot the table to be a wide table with one column for each genre. Use this table to find the most common combination of genres.
+basics_wide <- title_basics %>% 
+  filter(!duplicated(primaryTitle), !duplicated(originalTitle), !is.na(genres)) %>% 
+  mutate(hasGenre = 1)
 
-#title_basics$rowID <- seq_len(nrow(title_basics))
-#counts <- title_basics %>% group_by(title) %>% mutate(count=n()) %>% ungroup()
-#counts %>% pivot_wider(id_cols=rowID, names_from=genres, values_from=count, values_fill=0)
-#this was just me misunderstanding the question but i want to keep this code just in case
-
-title_pivoted %>% separate_rows(genres) #i will come back to this TODO
-# title_basics <- pivot_wider(title_basics, names_from = genres, id_cols = rowID, values_from = genres, values_fn = length)
+basics_wide <- pivot_wider(basics_wide, names_from = genres, values_from = hasGenre)
 ```
 
 ```{r}
-#* Use the `model.matrix` function in the following way: `model.matrix(yourtalltable, ~ genre - 1)` to create a wide table with one column for each genre. Use this table to find the most common pair of genres (hint: use the `cor` function or produce facet plots)
-model.matrix(~ genres - 1, title_pivoted) -> wide_genres
-#cor(wide_genres) %>% round(4)
-#corrplot(wide_genres, method = "color")
+#get counts of each column and sort
+#get just genre related columns
+genres_only <- basics_wide %>% select(-tconst, -titleType, -primaryTitle, -originalTitle,
+                                      -startYear, -endYear, -runtimeMinutes, -isAdult)
+
+sums <- c()
+for (c in seq_along(names(genres_only))){
+  sums[c] <- sum(!is.na(genres_only[,c]))
+}
+
+genres_only <- rbind(genres_only, sums)
+```
+
+```{r}
+#get just the counts to sort
+genre_counts <- genres_only %>% tail(1)
+pivot_longer(genre_counts, cols = names(genres_only), names_to = "Genres", values_to = "Count") %>% 
+  arrange(desc(Count))
+```
+Above are the most common combinations of genres, including titles with only a single genre. The most common genres seem to be Comedy, Drama, and Documentary, and the most common combination is Action, Adventure, and Animation.
+
+```{r}
+# Use the `model.matrix` function in the following way: `model.matrix(yourtalltable, ~ genre - 1)` to create a wide table with one column for each genre. Use this table to find the most common pair of genres (hint: use the `cor` function or produce facet plots)
+model.matrix(~ genres - 1, title_pivoted) -> genre_matrix
+correlations <- cor(genre_matrix) %>% round(4)
+max_cor_val <- max(abs(correlations[lower.tri(correlations)]))
+
 ```
 
 ## Part IV: Joining Tables
@@ -179,10 +196,10 @@ model.matrix(~ genres - 1, title_pivoted) -> wide_genres
   * What is the highest rated genre? What is the lowest rated genre?
   * Using stacked bar charts, investigate the proportions of different genres over time. Are any increasing or decreasing? Use factor functions to help make the plots easier to read.
 * Join the `title_basics` with the ratings table. Have the number of ratings changed over time (based on release year)? Display graphically but also answer with numerical results.
-* Join the names with the ratings and the principals table. 
+* Join the names_basics with the ratings and the principals table. - based on tconst and nconst
   * Group by individual people, find the top ten people based on the median rating of the titles they appear in.
   * Find the proportions of genres for the the titles that include the top 10 rated principals.
-  * Graph ratings against years. What trends do you see?
+  * Graph ratings against years. What trends do you see? - group by people, 
 * Create a table with one row for each person in the `name_basics` table and title they are known for. Join this to the ratings table to get the ratings of the "known for" films. Find the person (or people) who have the highest median known for rating.
 
 ```{r}
@@ -222,11 +239,15 @@ ggplot(basics_ratings, aes(x = startYear, fill = genre_fct)) +
 
 ```{r}
 #Join the `title_basics` with the ratings table. Have the number of ratings changed over time (based on release year)? Display graphically but also answer with numerical results.
+#want ratings per title
+#look at numVotes
 
 #title_basics and title_ratings are already joined in the basics_ratings table from the previous prompt
 basics_ratings %>% 
   group_by(startYear) %>% 
   summarize(rating = sum(averageRating))
+
+#TODO
 ```
 ```{r}
 # Join the names with the ratings and the principals table. 
@@ -249,6 +270,7 @@ ratings_principles %>%
 ```{r}
 # Graph ratings against years. What trends do you see?
 #didnt we just do this?
+#TODO
 ```
 
 ```{r}
