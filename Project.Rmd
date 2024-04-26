@@ -51,28 +51,67 @@ The [Internet Movie Database (IMDb)]() contains information on millions of movie
 #title_basics %>% summarise(across(where(is.numeric), ~list(mean = mean(., na.rm = TRUE), sd = sd(., na.rm = TRUE))))
 
 # For categorical columns:
-#title_basics %>% count(column_name)  # Replace `column_name` with actual column names
+#title_basics %>% count(originalTitle)  # Replace `column_name` with actual column names
 #ggplot(title_basics) +
 #  geom_histogram(aes(x = runtimeMinutes), binwidth = 10) +
-#  facet_wrap(~genre) +
+#  facet_wrap(~genres) +
 #  theme_minimal() +
 #  labs(title = "Distribution of Runtime by Genre")
 
 
-
-
 #Tilly's version
-summary(title_basics)  # General summary statistics
 
-# For quantitative columns:
-#title_basics %>% summarise(across(where(is.numeric), ~list(mean = mean(., na.rm = TRUE), sd = sd(., na.rm = TRUE))))
+#title_basics
+summary(title_basics$startYear, na.rm = TRUE)
+summary(title_basics$runtimeMinutes, na.rm = TRUE)
 
-
-ggplot(title_basics, aes(x = genres, y = runtimeMinutes)) +
+ggplot(title_basics, aes(x = titleType, y = runtimeMinutes)) +
   geom_boxplot() +
-  coord_flip() +
-  theme_minimal() +
-  labs(title = "Distribution of Runtime by Genre")
+  coord_flip()
+
+title_basics |> 
+  ggplot(aes(x = isAdult)) +
+  geom_histogram()
+```  
+
+
+```{r}
+#names_basics
+summary(name_basics$birthYear)
+summary(name_basics$deathYear)
+
+deathAge <- 2024 - name_basics$deathYear
+
+min_year <- min(name_basics$deathYear, na.rm=TRUE)
+max_year <- max(name_basics$deathYear, na.rm=TRUE)
+
+name_basics |> 
+  select(deathYear) |> 
+  count(deathYear, na.rm=TRUE) |> 
+  ggplot(aes(x=deathYear, y = n)) + 
+  geom_line() +
+  ylim(0, 120) +
+  xlim(min_year, max_year)
+  
+#could do actor names vs how many films --> bar
+```
+
+```{r}
+#title_ratings
+summary(title_ratings$averageRating)
+summary(title_ratings$numVotes)
+
+ggplot(title_ratings, aes(x = averageRating)) +
+  geom_histogram()
+```
+
+```{r}
+#title_principals
+summary(title_principals$ordering)
+
+ggplot(title_principals, aes(x =))
+
+
 ```
 
 * For the `titles_basics` table
