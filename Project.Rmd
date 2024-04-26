@@ -80,8 +80,6 @@ title_basics |>
 summary(name_basics$birthYear)
 summary(name_basics$deathYear)
 
-deathAge <- 2024 - name_basics$deathYear
-
 min_year <- min(name_basics$deathYear, na.rm=TRUE)
 max_year <- max(name_basics$deathYear, na.rm=TRUE)
 
