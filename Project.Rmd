@@ -47,19 +47,34 @@ The [Internet Movie Database (IMDb)]() contains information on millions of movie
   
 ```{r}
 # Using `titles_basics` as an example:
+#summary(title_basics)  # General summary statistics
+
+# For quantitative columns:
+#title_basics %>% summarise(across(where(is.numeric), ~list(mean = mean(., na.rm = TRUE), sd = sd(., na.rm = TRUE))))
+
+# For categorical columns:
+#title_basics %>% count(column_name)  # Replace `column_name` with actual column names
+#ggplot(title_basics) +
+#  geom_histogram(aes(x = runtimeMinutes), binwidth = 10) +
+#  facet_wrap(~genre) +
+#  theme_minimal() +
+#  labs(title = "Distribution of Runtime by Genre")
+
+
+
+
+#Tilly's version
 summary(title_basics)  # General summary statistics
 
 # For quantitative columns:
-title_basics %>% summarise(across(where(is.numeric), ~list(mean = mean(., na.rm = TRUE), sd = sd(., na.rm = TRUE))))
+#title_basics %>% summarise(across(where(is.numeric), ~list(mean = mean(., na.rm = TRUE), sd = sd(., na.rm = TRUE))))
 
-# For categorical columns:
-title_basics %>% count(column_name)  # Replace `column_name` with actual column names
-ggplot(title_basics) +
-  geom_histogram(aes(x = runtimeMinutes), binwidth = 10) +
-  facet_wrap(~genre) +
+
+ggplot(title_basics, aes(x = genres, y = runtimeMinutes)) +
+  geom_boxplot() +
+  coord_flip() +
   theme_minimal() +
   labs(title = "Distribution of Runtime by Genre")
-
 ```
 
 * For the `titles_basics` table
@@ -70,10 +85,9 @@ ggplot(title_basics) +
 #group_by 
 runtime_year <- title_basics |>
   group_by(startYear) |>
-  summarize(mean_rt = mean(runtimeMinutes),
-            med_rt = median(runtimeMinutes), 
-            min_rt = min(runtimeMinutes), 
-            max_rt = max(runtimeMinutes))
+  summarize(mean_rt = mean(runtimeMinutes, na.rm = TRUE),
+            min_rt = min(runtimeMinutes, na.rm = TRUE), 
+            max_rt = max(runtimeMinutes, na.rm = TRUE))
 runtime_year
 
 runtime_genres <- title_basics |>
