@@ -44,34 +44,6 @@ The [Internet Movie Database (IMDb)]() contains information on millions of movie
 
   
     * For each quantitative column, provide some summary statistics
-```{r}
-#title_basics
-summary(title_basics$startYear)
-summary(title_basics$runtimeMinutes, na.rm = TRUE)
-
-ggplot(title_basics, aes(x = genres, y = runtimeMinutes)) +
-  geom_boxplot() +
-  coord_flip()
-
-#names_basics
-summary(names_basics$birthYear)
-summary(names_basics$deathYear)
-
-ggplot(names_basics, aes(x =))
-#could do actor names vs how many films --> bar
-
-#title_ratings
-summary(title_ratings$averageRating)
-summary(title_ratings$numVotes)
-
-ggplot(title_ratings, aes(x = averageRating)) +
-  geom_histogram()
-
-#title_principals
-summary(title_principals$ordering)
-
-ggplot(title_principals, aes(x =))
-```
   
 ```{r}
 # Using `titles_basics` as an example:
@@ -94,51 +66,9 @@ ggplot(title_basics) +
   * use two different variables to group and explore how `runtimeMinutes` varies for these different groups. Produce appropriate summaries.
   * How many titles are known for name that is different than the original release name?
   * Graph the conditional distributions of release year based on the previous results. Comment on any trends you observe.
-```{r}
-#group_by 
-runtime_year <- title_basics |>
-  group_by(startYear) |>
-  summarize(mean_rt = mean(runtimeMinutes, na.rm = TRUE),
-            med_rt = median(runtimeMinutes, na.rm = TRUE), 
-            min_rt = min(runtimeMinutes, na.rm = TRUE), 
-            max_rt = max(runtimeMinutes, na.rm = TRUE))
-runtime_year
-
-runtime_genres <- title_basics |>
-  group_by(genres) |>
-  summarise(mean_rt = mean(runtimeMinutes, na.rm = TRUE), 
-            med_rt = median(runtumeMinutes, na.rm = TRUE), 
-            min_rt = min(runtimeMinutes, na.rm = TRUE), 
-            max_rt = max(runtimeMinutes, na.rm = TRUE))
-runtime_genres
-
-#different titles
-different_names <- sum(title_basics$originalTitle 
-                       != title_basics$primaryTitle, nr.rm = TRUE)
-different_names
-
-#graph release year 
-ggplot(title_basics, aes(x = startYear, fill = originalTitle != primaryTitle)) +
-  geom_histogram()
-```
-  
   
 * For the ratings, use the `cut` function to break the data into three groups based on the average ratings. Are higher rated titles rated more often or less often than lower rated titles? 
-```{r}
-ratings_cut <- cut(title_ratings$averageRating, breaks = 3, 
-                   labels = c("Low", "Medium", "High"))
-table(ratings_cut)
-```
 
-```{r}
-title_basics %>%
-  group_by(genre, region) %>%
-  summarise(mean_runtime = mean(runtimeMinutes, na.rm = TRUE), .groups = 'drop')
-different_names_count <- title_basics %>%
-  filter(originalTitle != primaryTitle) %>%
-  nrow()
-
-```
 * For the ratings, use the `cut` function to break the data into three groups based on the average ratings. Are higher rated titles rated more often or less often than lower rated titles? 
 ```{r}
 ratings <- ratings %>%
@@ -156,34 +86,8 @@ ratings %>%
       * For deceased cast members, provide a graph that shows the distribution of ages.
       * Do the same for living cast members.
 
-```{r}
-names_basics$birthYear <- as.integer(names_basics$birthYear)
-names_basics$deathYear <- as.integer(names_basics$deathYear)
-
-living_cast <- subst(names_basics, is.na(deathYear))
-deceased_cast <- subset(names_basics, !is.na(deathYear))
-
-#plot for deceased
-ggplot(deceased_cast, aes(x = deathYear - birthYear)) +
-  geom_histogram()
-
-#plot for living 
-ggplot(living_cast, aes(x = 2024 - birthYear)) +
-  geom_histogram()
-```
-
       
 * Find all the actors with first names "Tom", "Thomas", "Thom" or "Tomas". How many are there?
-```{r}
-#get right table
-tom_names <- c("Tom", "Thomas", "Thom", "Tomas")
-filter_tom <- names_basics[grepl(paste(tom_names, collapse = "|"), names_basics$primaryName), ]
-
-num_toms <- nrow(filter_tom)
-num_toms
-#whoops last names with tom are shown too
-```
-
 
       
 ```{r}
@@ -205,20 +109,7 @@ tom_actors_count <- names_table %>%
   nrow()
 ```
 
->>>>>>> 85e01ac0f6657fcda6ef7629a8051a9b74d91c18
 * How many titles use alliteration (i.e., all words in the title start with the same letter)?
-```{r}
-#get right table
-uses_alliteration <- function(title) {
-  words <- strsplit(title, " ")[[1]]  
-  first_letters <- substr(words, 1, 1)  
-  all(all(first_letters == first_letters[1])) 
-}
-
-num_allit <- sum(sapply(title_basics$primaryTitle, uses_alliteration))
-num_allit
-```
-
 
 ```{r}
 alliteration_count <- title_basics %>%
