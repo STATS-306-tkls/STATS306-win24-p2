@@ -32,16 +32,17 @@ The [Internet Movie Database (IMDb)]() contains information on millions of movie
 * Run the function on all of the `*_sample.csv.gz` files to created processed `.rda` files.
 * In your other files, you can load these using the `load("data/FILENAME.rda")` function.
 
-```{r}
-
-```
 
 ## Part II: EDA of individual tables
 
 * For each of the 4 tables, perform basic exploratory data analysis. Report the following information:
-  * For each quantitative column, provide some summary statistics
   * For any character columns, decided if they are actually representing factors/categorical data with a moderate number of columns. If so report the distributions for these variables.
+
   * Provide a plot for each table. Across all of the plots, try to show off the most possible different ggplot features (`geoms_` functions, `stat_` functions, coordinate systems, facets, use of several variables, annotations)
+
+  
+    * For each quantitative column, provide some summary statistics
+  
 ```{r}
 # Using `titles_basics` as an example:
 summary(title_basics)  # General summary statistics
@@ -58,34 +59,73 @@ ggplot(title_basics) +
   labs(title = "Distribution of Runtime by Genre")
 
 ```
+
 * For the `titles_basics` table
   * use two different variables to group and explore how `runtimeMinutes` varies for these different groups. Produce appropriate summaries.
   * How many titles are known for name that is different than the original release name?
   * Graph the conditional distributions of release year based on the previous results. Comment on any trends you observe.
 ```{r}
-title_basics %>%
-  group_by(genre, region) %>%
-  summarise(mean_runtime = mean(runtimeMinutes, na.rm = TRUE), .groups = 'drop')
-different_names_count <- title_basics %>%
-  filter(originalTitle != primaryTitle) %>%
-  nrow()
+#group_by 
+runtime_year <- title_basics |>
+  group_by(startYear) |>
+  summarize(mean_rt = mean(runtimeMinutes),
+            med_rt = median(runtimeMinutes), 
+            min_rt = min(runtimeMinutes), 
+            max_rt = max(runtimeMinutes))
+runtime_year
 
+runtime_genres <- title_basics |>
+  group_by(genres) |>
+  summarise(mean_rt = mean(runtimeMinutes, na.rm = TRUE), 
+            med_rt = median(runtumeMinutes, na.rm = TRUE), 
+            min_rt = min(runtimeMinutes, na.rm = TRUE), 
+            max_rt = max(runtimeMinutes, na.rm = TRUE))
+runtime_genres
+
+#different titles
+different_names <- sum(title_basics$originalTitle 
+                       != title_basics$primaryTitle, nr.rm = TRUE)
+different_names
+
+#graph release year 
+ggplot(title_basics, aes(x = startYear, fill = originalTitle != primaryTitle)) +
+  geom_histogram()
 ```
+
+
 * For the ratings, use the `cut` function to break the data into three groups based on the average ratings. Are higher rated titles rated more often or less often than lower rated titles? 
 ```{r}
-ratings <- ratings %>%
+ratings <- title_ratings %>%
   mutate(rating_group = cut(averageRating, breaks = c(0, 5, 8, 10), labels = c("Low", "Medium", "High")))
 
 ratings %>%
   group_by(rating_group) %>%
   summarise(avg_numVotes = mean(numVotes), .groups = 'drop')
 ```
+
 * For the names table, 
   * Count the number of titles each person is known for and plot this distribution.
   * investigate the age of cast members
       * Group the data into living and deceased cast members. 
       * For deceased cast members, provide a graph that shows the distribution of ages.
       * Do the same for living cast members.
+```{r}
+#THIS IS JUST ANOTHER METHOD OF DOING THIS
+names_basics$birthYear <- as.integer(names_basics$birthYear)
+names_basics$deathYear <- as.integer(names_basics$deathYear)
+
+living_cast <- subset(names_basics, is.na(deathYear))
+deceased_cast <- subset(names_basics, !is.na(deathYear))
+
+#plot for deceased
+ggplot(deceased_cast, aes(x = deathYear - birthYear)) +
+  geom_histogram()
+
+#plot for living 
+ggplot(living_cast, aes(x = 2024 - birthYear)) +
+  geom_histogram()
+```
+
       
 ```{r}
 names_table %>%
@@ -99,11 +139,15 @@ names_table %>%
   geom_density() +
   labs(title = "Distribution of Ages for Living vs. Deceased Cast Members")
 ```
+      
+
+    
 * Find all the actors with first names "Tom", "Thomas", "Thom" or "Tomas". How many are there?
 ```{r}
-tom_actors_count <- names_table %>%
+tom_actors_count <- names_basics %>%
   filter(grepl("^(Tom|Thomas|Thom|Tomas)\\b", primaryName)) %>%
   nrow()
+tom_actors_count
 ```
 
 * How many titles use alliteration (i.e., all words in the title start with the same letter)?
@@ -112,6 +156,7 @@ tom_actors_count <- names_table %>%
 alliteration_count <- title_basics %>%
   filter(grepl("^([a-zA-Z])\\b.*\\1", primaryTitle, perl = TRUE)) %>%
   nrow()
+alliteration_count
 ```
 
 ## Part III: Pivoting
@@ -234,6 +279,8 @@ ggplot(basics_ratings, aes(x = startYear, fill = genre_fct)) +
   ggtitle("Proportions of Genres Over Time") +
   xlab("Years") +
   ylab("Proportions of Genres")
+
+#WHAT IS RED ON GRAPH - MISSING LABEL (DRAMA?)
 ```
 "Realistic" genres - "Drama", "Comedy", "Crime", "Action", "Mystery", "Romance", and "War" - increased over time. "Fiction" genres - "Adventure", "Fantasy", "Horror", "Western", "Thriller", "Animation", and "Sci-Fi" - also increased. Only the "Other" category - "Short", "Music", "Family", and "Musical" - seemed to decrease.
 
@@ -241,7 +288,9 @@ ggplot(basics_ratings, aes(x = startYear, fill = genre_fct)) +
 #Join the `title_basics` with the ratings table. Have the number of ratings changed over time (based on release year)? Display graphically but also answer with numerical results.
 #want ratings per title
 #look at numVotes
+```
 
+```{r}
 #title_basics and title_ratings are already joined in the basics_ratings table from the previous prompt
 basics_ratings %>% 
   group_by(startYear) %>% 
@@ -249,6 +298,7 @@ basics_ratings %>%
 
 #TODO
 ```
+
 ```{r}
 # Join the names with the ratings and the principals table. 
 ratings_principles <- merge(title_ratings, title_principals)
