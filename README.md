@@ -151,3 +151,5 @@ Lynn Lam is a senior in the School of Information minoring in Statistics. I am s
 Shuxian Chen is a senior who majoring in Statistics & Data Science. I enjoy reading novels and playing video games.
 
 Katherine Zhao is a junior studying Pharmaceutical Sciences with a minor in Statistics. I enjoy dancing, playing the violin, and matching odd patterns together to create cohesively-uncohesive outfits.
+
+Tilmont "Tilly" Williams is a sophomore majoring in Statistics and minoring in German Studies. I enjoy running, knitting, and rock climbing. 
