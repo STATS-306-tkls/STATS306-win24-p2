@@ -245,7 +245,7 @@ The most common pair of genres seems to be Drama with Comedy.
 * Join the names_basics with the ratings and the principals table. - based on tconst and nconst
   * Group by individual people, find the top ten people based on the median rating of the titles they appear in.
   * Find the proportions of genres for the the titles that include the top 10 rated principals.
-  * Graph ratings against years. What trends do you see? - group by people, 
+  * Graph ratings against years. What trends do you see?
 * Create a table with one row for each person in the `name_basics` table and title they are known for. Join this to the ratings table to get the ratings of the "known for" films. Find the person (or people) who have the highest median known for rating.
 
 ```{r}
@@ -280,46 +280,73 @@ ggplot(basics_ratings, aes(x = startYear, fill = genre_fct)) +
   ggtitle("Proportions of Genres Over Time") +
   xlab("Years") +
   ylab("Proportions of Genres")
-
-#WHAT IS RED ON GRAPH - MISSING LABEL (DRAMA?)
 ```
 "Realistic" genres - "Drama", "Comedy", "Crime", "Action", "Mystery", "Romance", and "War" - increased over time. "Fiction" genres - "Adventure", "Fantasy", "Horror", "Western", "Thriller", "Animation", and "Sci-Fi" - also increased. Only the "Other" category - "Short", "Music", "Family", and "Musical" - seemed to decrease.
 
 ```{r}
 #Join the `title_basics` with the ratings table. Have the number of ratings changed over time (based on release year)? Display graphically but also answer with numerical results.
-#want ratings per title
-#look at numVotes
 
 #title_basics and title_ratings are already joined in the basics_ratings table from the previous prompt
 basics_ratings %>% 
   group_by(startYear) %>% 
-  summarize(rating = sum(averageRating))
-
-#TODO
+  summarize(numRatings = sum(numVotes)) %>% 
+  filter(!is.na(numRatings)) %>% 
+  ggplot(aes(x = startYear, y = numRatings)) +
+  geom_line() +
+  theme_bw() +
+  ggtitle("Number of Ratings Per Year") +
+  xlab("Year") +
+  ylab("Number of Ratings")
 ```
+The number of ratings (or the sum of numVotes) increased heavily between 1980 at about 1e6 votes and 2010 at about 1.8e7 votes, then heavily decreased from there to 5e6 around 2020.
 
 ```{r}
 # Join the names with the ratings and the principals table. 
 ratings_principles <- merge(title_ratings, title_principals)
+
+all_merged <- merge(ratings_principles, name_basics)
 ```
 
 ```{r}
 # Group by individual people, find the top ten people based on the median rating of the titles they appear in.
-ratings_principles %>% 
-  group_by(characters) %>% 
+all_merged %>% 
+  group_by(primaryName) %>% 
   summarize(medRating = median(averageRating)) %>% 
   arrange(desc(medRating))
 ```
 
 ```{r}
 # Find the proportions of genres for the the titles that include the top 10 rated principals.
+#TODO
 
+#get top rated principals
+top_principals <- all_merged %>% 
+  group_by(tconst) %>% 
+  summarize(ratings = sum(averageRating)) %>% 
+  arrange(desc(ratings))
+top_principals <- top_principals %>% head(10)
+top_tconst <- top_principals$tconst
 ```
 
 ```{r}
-# Graph ratings against years. What trends do you see?
-#didnt we just do this?
-#TODO
+all_merged %>% 
+  filter(tconst %in% top_tconst) %>% 
+  ggplot(basics_ratings, aes(x = , fill = genre_fct)) +
+  geom_bar(position = "fill")
+```
+
+```{r}
+# Graph ratings against years. What trends do you see? - group by people/birth year
+all_merged %>% 
+  group_by(birthYear) %>% 
+  summarize(ratings = sum(averageRating)) %>% 
+  ggplot(aes(x = birthYear, y = ratings)) +
+  geom_point() +
+  theme_bw() +
+  ylim(0, 500) +
+  ggtitle("Person Ratings vs. Birth Year") +
+  xlab("Birth Year") +
+  ylab("Sum of Average Ratings")
 ```
 
 ```{r}
