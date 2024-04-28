@@ -1,5 +1,5 @@
 ---
-title: "Stats 306 Final Project" rahhhhhh
+title: "Stats 306 Final Project"
 author:
   - "Katherine Aijia Zhao, kazhao"
   - "Lynn Ngoc Lam, lynnla"
