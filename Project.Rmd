@@ -469,6 +469,7 @@ profvis(f())
 
 #the group_by action of this code took the greatest amount of time for the function to run—it could possibly be improved by running the code through parallelization to "speed up" the amount of time needed to run the summarize statistics on each group
 ```
+
 * Select a previous computation that could be improved using parallelization and implement a parallelization solution. Using `system.time` show that parallelization improves performance.
 
 ```{r parallelization}
@@ -496,7 +497,6 @@ min(title_basics$runtimeMinutes, na.rm=TRUE)
 end_time2 <- Sys.time()
 total_time2 <- end_time2 - start_time2
 total_time2
-
 
 ```
 
