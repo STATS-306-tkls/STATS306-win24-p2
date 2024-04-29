@@ -70,8 +70,10 @@ ggplot(title_basics, aes(x = titleType, y = runtimeMinutes)) +
   coord_flip()
 
 title_basics |> 
-  ggplot(aes(x = isAdult)) +
-  geom_histogram()
+  count(titleType) |>
+  ggplot(aes(x = titleType, y = n)) +
+  geom_col()
+
 ```  
 
 
@@ -86,12 +88,12 @@ max_year <- max(name_basics$deathYear, na.rm=TRUE)
 name_basics |> 
   select(deathYear) |> 
   count(deathYear, na.rm=TRUE) |> 
-  ggplot(aes(x=deathYear, y = n)) + 
+  ggplot(aes(x= deathYear, y = n)) + 
   geom_line() +
-  ylim(0, 120) +
+  ylim(0, 110) +
   xlim(min_year, max_year)
   
-#could do actor names vs how many films --> bar
+#
 ```
 
 ```{r}
