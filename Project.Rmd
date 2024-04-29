@@ -84,11 +84,13 @@ summary(title_basics$runtimeMinutes, na.rm = TRUE)
 
 ggplot(title_basics, aes(x = titleType, y = runtimeMinutes)) +
   geom_boxplot() +
-  coord_flip()
+  coord_flip() 
 
 title_basics |> 
-  ggplot(aes(x = isAdult)) +
-  geom_histogram()
+  count(titleType) |>
+  ggplot(aes(x = titleType, y = n)) +
+  geom_col()
+
 ```  
 
 
@@ -103,12 +105,10 @@ max_year <- max(name_basics$deathYear, na.rm=TRUE)
 name_basics |> 
   select(deathYear) |> 
   count(deathYear, na.rm=TRUE) |> 
-  ggplot(aes(x=deathYear, y = n)) + 
+  ggplot(aes(x= deathYear, y = n)) + 
   geom_line() +
-  ylim(0, 120) +
+  ylim(0, 110) +
   xlim(min_year, max_year)
-  
-#could do actor names vs how many films --> bar
 ```
 
 ```{r}
@@ -118,14 +118,17 @@ summary(title_ratings$numVotes)
 
 ggplot(title_ratings, aes(x = averageRating)) +
   geom_histogram()
+
+ggplot(title_ratings, aes(x = numVotes, y = averageRating)) +
+  geom_jitter()
 ```
 
-```{r}
+```{r fig.width = 15}
 #title_principals
 summary(title_principals$ordering)
 
-ggplot(title_principals, aes(x =))
-
+ggplot(title_principals, aes(x = category, y = ordering)) +
+  geom_violin()
 
 ```
 
@@ -138,6 +141,7 @@ ggplot(title_principals, aes(x =))
 runtime_year <- title_basics |>
   group_by(startYear) |>
   summarize(mean_rt = mean(runtimeMinutes, na.rm = TRUE),
+            med_rt = median(runtimeMinutes, na.rm = TRUE),
             min_rt = min(runtimeMinutes, na.rm = TRUE), 
             max_rt = max(runtimeMinutes, na.rm = TRUE))
 runtime_year
@@ -145,11 +149,12 @@ runtime_year
 runtime_genres <- title_basics |>
   group_by(genres) |>
   summarise(mean_rt = mean(runtimeMinutes, na.rm = TRUE), 
-            med_rt = median(runtumeMinutes, na.rm = TRUE), 
+            med_rt = median(runtimeMinutes, na.rm = TRUE), 
             min_rt = min(runtimeMinutes, na.rm = TRUE), 
             max_rt = max(runtimeMinutes, na.rm = TRUE))
 runtime_genres
-
+```
+```{r}
 #different titles
 different_names <- sum(title_basics$originalTitle 
                        != title_basics$primaryTitle, nr.rm = TRUE)
@@ -162,6 +167,8 @@ ggplot(title_basics, aes(x = startYear, fill = originalTitle != primaryTitle)) +
 
 
 * For the ratings, use the `cut` function to break the data into three groups based on the average ratings. Are higher rated titles rated more often or less often than lower rated titles? 
+
+High rated titles are rated more often than Low rated titles, but less often than Medium rated titles.
 ```{r}
 ratings <- title_ratings %>%
   mutate(rating_group = cut(averageRating, breaks = c(0, 5, 8, 10), labels = c("Low", "Medium", "High")))
@@ -178,12 +185,22 @@ ratings %>%
       * For deceased cast members, provide a graph that shows the distribution of ages.
       * Do the same for living cast members.
 ```{r}
-#THIS IS JUST ANOTHER METHOD OF DOING THIS
-names_basics$birthYear <- as.integer(names_basics$birthYear)
-names_basics$deathYear <- as.integer(names_basics$deathYear)
+#number of titles each person is known for
+name_basics <- name_basics |>
+  mutate(numTitles = str_count(knownForTitles, ",") + 1) 
 
-living_cast <- subset(names_basics, is.na(deathYear))
-deceased_cast <- subset(names_basics, !is.na(deathYear))
+ggplot(name_basics, aes(x = primaryName, y = numTitles)) +
+  geom_col() +
+  coord_flip()
+```
+      
+```{r}
+#age of cast members
+name_basics$birthYear <- as.integer(name_basics$birthYear)
+name_basics$deathYear <- as.integer(name_basics$deathYear)
+
+living_cast <- subset(name_basics, is.na(deathYear))
+deceased_cast <- subset(name_basics, !is.na(deathYear))
 
 #plot for deceased
 ggplot(deceased_cast, aes(x = deathYear - birthYear)) +
@@ -193,26 +210,11 @@ ggplot(deceased_cast, aes(x = deathYear - birthYear)) +
 ggplot(living_cast, aes(x = 2024 - birthYear)) +
   geom_histogram()
 ```
-
-      
-```{r}
-names_table %>%
-  ggplot(aes(x = knownForTitles)) +
-  geom_histogram() +
-  labs(title = "Distribution of Number of Titles Known For Each Person")
-# Assuming you have birth and death year
-names_table %>%
-  mutate(age = ifelse(is.na(deathYear), 2023 - birthYear, deathYear - birthYear)) %>%
-  ggplot(aes(x = age, color = is.na(deathYear))) +
-  geom_density() +
-  labs(title = "Distribution of Ages for Living vs. Deceased Cast Members")
-```
-      
-
+  
     
 * Find all the actors with first names "Tom", "Thomas", "Thom" or "Tomas". How many are there?
 ```{r}
-tom_actors_count <- names_basics %>%
+tom_actors_count <- name_basics %>%
   filter(grepl("^(Tom|Thomas|Thom|Tomas)\\b", primaryName)) %>%
   nrow()
 tom_actors_count
