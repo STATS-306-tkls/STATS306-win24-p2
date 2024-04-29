@@ -485,7 +485,15 @@ profvis(f())
 #the group_by action of this code took the greatest amount of time for the function to run—it could possibly be improved by running the code through parallelization to "speed up" the amount of time needed to run the summarize statistics on each group
 ```
 * Select a previous computation that could be improved using parallelization and implement a parallelization solution. Using `system.time` show that parallelization improves performance.
+
+```{r parallelization}
+summary(title_basics$startYear, na.rm = TRUE)
+```
+
+
 * One task we performed involved counting items in strings separated by commas. Propose two different functions that could perform this taks. Compare them using bench marking. Which version would you recommend?
+
+
 ## Part VI: Shiny Applications
 
 ### Application 1
