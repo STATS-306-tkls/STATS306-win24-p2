@@ -140,13 +140,16 @@ to retrieve and share your changes.
 
 ## Project Abstract
 
-You will complete this portion at a later time.
+This project analyzed and visualized the data from the IMDB. We initially tidied the data by registering "\N" as an NA value in the datasets.
+We then began basic exploratory analysis on the 4 tables - title_basics, title_principals, title_ratings, and name_basics. This was achieved by finding summaries and distributions of various columns in each table and plotting them. Basic data manipulation functions, such as "mutate", "summarize", and "group_by" as well as the "ggplot" library were utilized for this section.
+We analyzed the title_basics table more in-depth in terms of its "genres" column. The column was expanded using the "pivot_longer" and "separate_rows" functions in order to visualize how genre proportions of titles varied over time. "pivot_wider" and "cor" were then used to separate each genre into its own column and find the most common genre pairing.
+The tables were merged in various groupings to analyze the relationships between them. title_basics and title_ratings were joined to determine the average ratings of each genre and plot their trends. name_basics, title_ratings, and title_principals were then all joined to find the most highly rated people in the dataset, the proportions of genres for titles that they were included in, and to visualize their ratings over time. This allowed us to understand the trends of ratings over time for popular people and titles in the dataset.
+We continued to experiment with optimizing previous code using parallel processing and profiling.
+Lastly, we created Shiny applications for users to interact with the IMDB data. 
 
 ## Team
 
-Each team member should add a brief biography (year, program, interests). You may add a photo, but it is not required.
-
-Lynn Lam is a senior in the School of Information minoring in Statistics. I am studying Information Analysis and will be graduating after 5 years of university after next winter. I enjoy being a coffee snob, playing video games (Baldur's Gate 3 right now!), and watching horror movies.
+Lynn Lam is a senior in the School of Information minoring in Statistics. I will be graduating after 5 years of university after next winter. I enjoy being a coffee snob, playing video games (Baldur's Gate 3 right now!), and watching horror movies.
 
 Shuxian Chen is a senior who majoring in Statistics & Data Science. I enjoy reading novels and playing video games.
 
