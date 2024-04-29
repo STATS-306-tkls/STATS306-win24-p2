@@ -63,23 +63,6 @@ rm(temp_env)
     * For each quantitative column, provide some summary statistics
   
 ```{r}
-# Using `titles_basics` as an example:
-#summary(title_basics)  # General summary statistics
-
-# For quantitative columns:
-#title_basics %>% summarise(across(where(is.numeric), ~list(mean = mean(., na.rm = TRUE), sd = sd(., na.rm = TRUE))))
-
-# For categorical columns:
-#title_basics %>% count(originalTitle)  # Replace `column_name` with actual column names
-#ggplot(title_basics) +
-#  geom_histogram(aes(x = runtimeMinutes), binwidth = 10) +
-#  facet_wrap(~genres) +
-#  theme_minimal() +
-#  labs(title = "Distribution of Runtime by Genre")
-
-
-#Tilly's version
-
 #title_basics
 summary(title_basics$startYear, na.rm = TRUE)
 summary(title_basics$runtimeMinutes, na.rm = TRUE)
@@ -94,7 +77,9 @@ title_basics |>
   geom_col()
 
 ```  
+Based on the title type of a title the runtime (in minutes) varies, with large values in types movie and tvSeries. Types short and tvShort have the lowest runtime. All of the mean are between 0 and 500 minutes. 
 
+The column titleType is a charachter column that is representing categorical data, the distribution of titleTypes are shown in the plot. 
 
 ```{r}
 #names_basics
@@ -112,7 +97,7 @@ name_basics |>
   ylim(0, 110) +
   xlim(min_year, max_year)
 ```
-
+The plot shows the amount of deaths in a given year. Based on the plot we can see that the number of deaths has increased
 ```{r}
 #title_ratings
 summary(title_ratings$averageRating)
@@ -191,8 +176,11 @@ ratings %>%
 name_basics <- name_basics |>
   mutate(numTitles = str_count(knownForTitles, ",") + 1) 
 
-ggplot(name_basics, aes(x = primaryName, y = numTitles)) +
-  geom_col() +
+name_basics %>% 
+  group_by(numTitles) %>% 
+  count() %>% 
+  ggplot(aes(x = numTitles, y = n)) +
+  geom_col() + 
   coord_flip()
 ```
       
@@ -463,8 +451,75 @@ Several people have the highest median rating of 10, as shown in the above tibbl
 
 * These are large data sets (and yet only a sample of the entire IMDb!), so it make sense spend some time improving our code.
 * Pick one or more of the previous problems and profile the performance of that piece. Write up your findings. If you see any opportunities to improve performance, feel fee to implement than and share the results.
+
+```{r part 5 set-up}
+library(profvis)
+library(bench)
+library(parallel)
+```
+
+```{r profiling, eval = FALSE}
+f <- function(){
+title_basics |>
+  group_by(startYear) |>
+  summarize(mean_rt = mean(runtimeMinutes, na.rm = TRUE),
+            med_rt = median(runtimeMinutes, na.rm = TRUE),
+            min_rt = min(runtimeMinutes, na.rm = TRUE), 
+            max_rt = max(runtimeMinutes, na.rm = TRUE))
+}
+profvis(f())
+
+#the group_by action of this code took the greatest amount of time for the function to run—it could possibly be improved by running the code through parallelization to "speed up" the amount of time needed to run the summarize statistics on each group
+```
 * Select a previous computation that could be improved using parallelization and implement a parallelization solution. Using `system.time` show that parallelization improves performance.
+
+```{r parallelization}
+cl <- makeCluster(2)
+
+start_time1 <- Sys.time()
+
+#function
+splits <- clusterSplit(cl, title_basics$runtimeMinutes) 
+worker_output <- clusterMap(cl=cl, fun = min, splits, na.rm = TRUE)
+flatten_dbl(worker_output) %>% min()
+
+end_time1 <- Sys.time()
+
+total_time1 <- end_time1 - start_time1
+total_time1
+
+
+#OTHER APPROACH
+start_time2 <- Sys.time()
+
+#function
+min(title_basics$runtimeMinutes, na.rm=TRUE)
+
+end_time2 <- Sys.time()
+total_time2 <- end_time2 - start_time2
+total_time2
+
+
+```
+
 * One task we performed involved counting items in strings separated by commas. Propose two different functions that could perform this taks. Compare them using bench marking. Which version would you recommend?
+
+```{r benchmarking}
+
+v1 <- function(x){
+  str_count(x, ",") + 1
+}
+
+v2 <- function(x){
+  strsplit(x,split= ",") %>% unlist() %>% length()
+}
+
+bm <- bench::mark(v1("tt0072308,tt0050419,tt0053137,tt0027125"), v2("tt0072308,tt0050419,tt0053137,tt0027125"))
+bm
+
+#based on the results of the benchmark, it would recommended to use the second version of this function
+```
+
 
 ## Part VI: Shiny Applications
 
