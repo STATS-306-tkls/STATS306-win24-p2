@@ -495,18 +495,14 @@ end_time2 <- Sys.time()
 total_time2 <- end_time2 - start_time2
 total_time2
 
-# name_basics <- name_basics |>
-#   mutate(numTitles = str_count(knownForTitles, ",") + 1) 
 
 ```
 ```{r parallelization2}
 
-cl <- makeCluster(4)
+cl <- makeCluster(2)
 
 start_time1 <- Sys.time()
-
 parSapply(cl, title_basics, function(col) { sum(!is.na(col))})
-
 end_time1 <- Sys.time()
 
 total_time1 <- end_time1 - start_time1
@@ -523,6 +519,22 @@ total_time2 <- end_time2 - start_time2
 total_time2
 ```
 * One task we performed involved counting items in strings separated by commas. Propose two different functions that could perform this taks. Compare them using bench marking. Which version would you recommend?
+
+```{r benchmarking}
+
+v1 <- function(x){
+  str_count(x, ",") + 1
+}
+
+v2 <- function(x){
+  strsplit(x,split= ",") %>% unlist() %>% length()
+}
+
+bm <- bench::mark(v1("tt0072308,tt0050419,tt0053137,tt0027125"), v2("tt0072308,tt0050419,tt0053137,tt0027125"))
+bm
+
+#based on the results of the benchmark, it would recommended to use the second version of this function
+```
 
 
 ## Part VI: Shiny Applications
