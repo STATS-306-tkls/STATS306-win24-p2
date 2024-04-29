@@ -4,8 +4,6 @@ load_csv <- function(csv_name){
   data <- read_csv(file=path, na = "\\N")
   rda_path <- paste0(csv_name, ".rda")
   save(data, file = rda_path)
-  load(rda_path)
-  assign(csv_name, data, envir = .GlobalEnv)
 }
   
 files <- list.files(pattern = "_sample\\.csv\\.gz$", full.names = FALSE)
