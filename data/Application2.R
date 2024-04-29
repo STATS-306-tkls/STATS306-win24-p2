@@ -17,13 +17,13 @@ ui <- fluidPage(
     ),
     
     mainPanel(
-      tableOutput("actor_info")
+      tableOutput("knownFor_info")
     )
   )
 )
 
 server <- function(input, output) {
-  output$actor_info <- renderTable({
+  output$knownFor_info <- renderTable({
     filtered_data <- title_principals[title_principals$category == input$category, ]
     nconsts <- filtered_data$nconst
     match_data <- name_basics[name_basics$nconst %in% nconsts, ]
