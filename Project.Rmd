@@ -12,6 +12,8 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
+library(dplyr)
+library(shiny)
 ```
 
 ## Investigating the Internet Movie Database (IMDB)
@@ -79,7 +81,7 @@ title_basics |>
 ```  
 Based on the title type of a title the runtime (in minutes) varies, with large values in types movie and tvSeries. Types short and tvShort have the lowest runtime. All of the mean are between 0 and 500 minutes. 
 
-THe column titleType is a charachter column that is representing categorical data, the distribution of titleTypes are shown in the plot. 
+The column titleType is a charachter column that is representing categorical data, the distribution of titleTypes are shown in the plot. 
 
 ```{r}
 #names_basics
@@ -467,75 +469,16 @@ Several people have the highest median rating of 10, as shown in the above tibbl
 
 ## Part V: Profiling and Parallel Processing
 
-### Part (a)
-Consider a function $f(x) = -\sqrt{x} + x$. Give a number $n$, calculate $f(x)$ for any $x$ which satisfies $x \leq n$ using for loop, save the results as a vector. Let $n = 500$, print the fist 5 elements of your final results. The function `Sys.time()` can help you calculate the time. Use `Sys.sleep(0.1)` inside for loop to suspend the execution of each iteration 0.1 second. Print the running time 
-```{r}
-#f <- function(x) {
-#   return(-sqrt(x) + x)
-# }
-# 
-# results <- 0
-# n <- 500
-# start_time <- Sys.time()
-# 
-# for (x in 1:n) {
-#   result <-f(x)
-#   results<- c(results, result)
-#   Sys.sleep(0.1)
-# }
-# 
-# first_5 <- results[1:5]
-# first_5
-# end_time <- Sys.time()
-# 
-# run_time <- end_time - start_time
-# run_time
-```
-Modify your above code using parallization. Also use `Sys.sleep(0.1)` inside for loop to suspend the execution of each iteration 0.1 second. Consider to use the tools of `foreach` and `doParallel`. You can use 2 cores for this question. Print the running time. Compare with the running time in (a), what have you observed?
-
-This running time is much faster, taking half the time as in part a. 
-```{r}
-# cl <- makeCluster(2)
-# registerDoParallel(cl)
-# 
-# start_time2 <- Sys.time()
-# 
-# para <- foreach(x = 1:n, .combine = c) %dopar% {
-#   Sys.sleep(0.1)
-#   f(x)
-# }
-# 
-# end_time2 <- Sys.time()
-# stopCluster(cl)
-# 
-# run_time2 <- end_time2 - start_time2
-# run_time2
-```
-### Part (c):
-Complete the same task above. This time use `parSapply()` instead. You do not need to specify the sleep time in this question.
-```{r}
-# cl <- makeCluster(2)
-# start_time3 <- Sys.time()
-# 
-# running <- parSapply(cl, 1:n, f)
-# 
-# end_time3 <- Sys.time()
-# 
-# run_time3 <- end_time3 - start_time3
-# run_time3
-# 
-# stopCluster(cl)
-```
-
 * These are large data sets (and yet only a sample of the entire IMDb!), so it make sense spend some time improving our code.
 * Pick one or more of the previous problems and profile the performance of that piece. Write up your findings. If you see any opportunities to improve performance, feel fee to implement than and share the results.
 
 ```{r part 5 set-up}
 library(profvis)
 library(bench)
+library(parallel)
 ```
 
-```{r profiling}
+```{r profiling, eval = FALSE}
 f <- function(){
 title_basics |>
   group_by(startYear) |>
@@ -548,14 +491,54 @@ profvis(f())
 
 #the group_by action of this code took the greatest amount of time for the function to run—it could possibly be improved by running the code through parallelization to "speed up" the amount of time needed to run the summarize statistics on each group
 ```
+
 * Select a previous computation that could be improved using parallelization and implement a parallelization solution. Using `system.time` show that parallelization improves performance.
 
 ```{r parallelization}
-summary(title_basics$startYear, na.rm = TRUE)
+cl <- makeCluster(2)
+
+start_time1 <- Sys.time()
+
+#function
+splits <- clusterSplit(cl, title_basics$runtimeMinutes) 
+worker_output <- clusterMap(cl=cl, fun = min, splits, na.rm = TRUE)
+flatten_dbl(worker_output) %>% min()
+
+end_time1 <- Sys.time()
+
+total_time1 <- end_time1 - start_time1
+total_time1
+
+
+#OTHER APPROACH
+start_time2 <- Sys.time()
+
+#function
+min(title_basics$runtimeMinutes, na.rm=TRUE)
+
+end_time2 <- Sys.time()
+total_time2 <- end_time2 - start_time2
+total_time2
+
 ```
 
-
 * One task we performed involved counting items in strings separated by commas. Propose two different functions that could perform this taks. Compare them using bench marking. Which version would you recommend?
+
+```{r benchmarking}
+
+v1 <- function(x){
+  str_count(x, ",") + 1
+}
+
+v2 <- function(x){
+  strsplit(x,split= ",") %>% unlist() %>% length()
+}
+
+bm <- bench::mark(v1("tt0072308,tt0050419,tt0053137,tt0027125"), v2("tt0072308,tt0050419,tt0053137,tt0027125"))
+bm
+
+#based on the results of the benchmark, it would recommended to use the second version of this function
+```
 
 
 ## Part VI: Shiny Applications
@@ -579,3 +562,100 @@ Create an app to allow users to play [Six Degrees of Kevin Bacon](https://en.wik
 Create a Shiny application where a person can type the primary title of movie or TV show. Then have app show all the people who had a role in the show. Let the user select a person in that cast and show all other people who have been in a title with that person. Repeat up to 6 times. If "Kevin Bacon" (`nconst == 'nm0000102'`) ever appears in the list, let the player know they have won! If they click more than 6 times, let them know they have lost.
 
 
+```{r}
+ui <- fluidPage(
+    titlePanel("Six Degrees of Kevin Bacon"),
+    sidebarLayout(
+        sidebarPanel(
+            textInput("title_input", "Enter a Movie or TV Show Title:"),
+            actionButton("search_button", "Search"),
+            selectInput("actor_select", "Select an Actor:", choices = NULL),
+            actionButton("next_button", "Next"),
+            textOutput("game_status")
+        ),
+        mainPanel(
+            dataTableOutput("cast_table")
+        )
+    )
+)
+
+server <- function(input, output, session) {
+    game_status <- reactiveVal("Start your search")
+    path <- reactiveVal(data.frame(nconst = character(), primaryName = character(), stringsAsFactors = FALSE))
+    selected_actors <- reactiveVal(data.frame(nconst = character(), primaryName = character(), stringsAsFactors = FALSE))
+
+    observeEvent(input$search_button, {
+        req(input$title_input)
+        selected_titles <- title_basics %>%
+            filter(str_detect(primaryTitle, regex(input$title_input, ignore_case = TRUE))) %>%
+            select(tconst) %>%
+            distinct()
+        actors <- title_principals %>%
+            filter(tconst %in% selected_titles$tconst) %>%
+            select(nconst) %>%
+            distinct() %>%
+            inner_join(name_basics, by = "nconst")
+
+        selected_actors(actors)
+        updateSelectInput(session, "actor_select", choices = setNames(actors$primaryName, actors$nconst))
+    })
+
+    observeEvent(input$next_button, {
+        req(input$actor_select)
+        current_actor <- input$actor_select
+        if (current_actor == "nm0000102") {
+            game_status("Congratulations! You found Kevin Bacon.")
+            return()
+        }
+
+        current_path <- path()
+        if (nrow(current_path) < 6) {
+            # Append the selected actor to the path
+            current_path <- rbind(current_path, selected_actors() %>% filter(nconst == current_actor))
+            path(current_path)
+
+            connected_titles <- title_principals %>%
+                filter(nconst == current_actor) %>%
+                select(tconst) %>%
+                distinct()
+
+            connected_actors <- title_principals %>%
+                filter(tconst %in% connected_titles$tconst & nconst != current_actor) %>%
+                select(nconst) %>%
+                distinct() %>%
+                inner_join(name_basics, by = "nconst")
+
+            updateSelectInput(session, "actor_select", choices = setNames(connected_actors$primaryName, connected_actors$nconst))
+            
+            game_status(paste("You are at degree", nrow(current_path), "of Kevin Bacon. Keep going!"))
+        } else {
+            game_status("Sorry, you've exceeded 6 degrees. Game over.")
+        }
+    })
+
+    output$cast_table <- renderDataTable({
+        req(input$title_input)
+        selected_titles <- title_basics %>%
+            filter(str_detect(primaryTitle, regex(input$title_input, ignore_case = TRUE))) %>%
+            select(tconst) %>%
+            distinct()
+
+        selected_cast <- title_principals %>%
+            filter(tconst %in% selected_titles$tconst) %>%
+            select(nconst) %>%
+            distinct() %>%
+            inner_join(name_basics, by = "nconst") %>%
+            select(primaryName, birthYear, primaryProfession) %>%
+            distinct() %>%
+            arrange(primaryName)
+        
+        selected_cast
+    }, options = list(pageLength = 10))
+
+    output$game_status <- renderText({
+        game_status()
+    })
+}
+
+shinyApp(ui = ui, server = server)
+```
