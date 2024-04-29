@@ -678,3 +678,11 @@ server <- function(input, output, session) {
 
 shinyApp(ui = ui, server = server)
 ```
+
+# Statement of Effort
+
+Shuxian and Lynn completed the preprocessing.
+Shuxian, Tilly, and Katherine completed Part II.
+Lynn completed most of Part III and Part IV with assistance of the other members.
+Tilly and Katherine completed most of Part V with assistance of the other members.
+Shuxian completed most of Part VI with assistance of the other members.
