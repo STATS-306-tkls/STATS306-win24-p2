@@ -456,7 +456,7 @@ library(bench)
 library(parallel)
 ```
 
-```{r profiling}
+```{r profiling, eval = FALSE}
 f <- function(){
 title_basics |>
   group_by(startYear) |>
@@ -476,7 +476,8 @@ cl <- makeCluster(2)
 
 start_time1 <- Sys.time()
 
-splits <- clusterSplit(cl, title_basics$runtimeMinutes)
+#function
+splits <- clusterSplit(cl, title_basics$runtimeMinutes) 
 worker_output <- clusterMap(cl=cl, fun = min, splits, na.rm = TRUE)
 flatten_dbl(worker_output) %>% min()
 
@@ -489,6 +490,7 @@ total_time1
 #OTHER APPROACH
 start_time2 <- Sys.time()
 
+#function
 min(title_basics$runtimeMinutes, na.rm=TRUE)
 
 end_time2 <- Sys.time()
@@ -497,27 +499,7 @@ total_time2
 
 
 ```
-```{r parallelization2}
 
-cl <- makeCluster(2)
-
-start_time1 <- Sys.time()
-parSapply(cl, title_basics, function(col) { sum(!is.na(col))})
-end_time1 <- Sys.time()
-
-total_time1 <- end_time1 - start_time1
-total_time1
-
-
-#OTHER APPROACH
-start_time2 <- Sys.time()
-
-map(title_basics, function(col) { sum(!is.na(col))})
-
-end_time2 <- Sys.time()
-total_time2 <- end_time2 - start_time2
-total_time2
-```
 * One task we performed involved counting items in strings separated by commas. Propose two different functions that could perform this taks. Compare them using bench marking. Which version would you recommend?
 
 ```{r benchmarking}
