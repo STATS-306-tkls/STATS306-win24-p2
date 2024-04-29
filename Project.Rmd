@@ -61,23 +61,6 @@ rm(temp_env)
     * For each quantitative column, provide some summary statistics
   
 ```{r}
-# Using `titles_basics` as an example:
-#summary(title_basics)  # General summary statistics
-
-# For quantitative columns:
-#title_basics %>% summarise(across(where(is.numeric), ~list(mean = mean(., na.rm = TRUE), sd = sd(., na.rm = TRUE))))
-
-# For categorical columns:
-#title_basics %>% count(originalTitle)  # Replace `column_name` with actual column names
-#ggplot(title_basics) +
-#  geom_histogram(aes(x = runtimeMinutes), binwidth = 10) +
-#  facet_wrap(~genres) +
-#  theme_minimal() +
-#  labs(title = "Distribution of Runtime by Genre")
-
-
-#Tilly's version
-
 #title_basics
 summary(title_basics$startYear, na.rm = TRUE)
 summary(title_basics$runtimeMinutes, na.rm = TRUE)
@@ -92,7 +75,9 @@ title_basics |>
   geom_col()
 
 ```  
+Based on the title type of a title the runtime (in minutes) varies, with large values in types movie and tvSeries. Types short and tvShort have the lowest runtime. All of the mean are between 0 and 500 minutes. 
 
+THe column titleType is a charachter column that is representing categorical data, the distribution of titleTypes are shown in the plot. 
 
 ```{r}
 #names_basics
@@ -110,7 +95,7 @@ name_basics |>
   ylim(0, 110) +
   xlim(min_year, max_year)
 ```
-
+The plot shows the amount of deaths
 ```{r}
 #title_ratings
 summary(title_ratings$averageRating)
@@ -189,13 +174,12 @@ ratings %>%
 name_basics <- name_basics |>
   mutate(numTitles = str_count(knownForTitles, ",") + 1) 
 
-name_basics %>% group_by(numTitles) %>% count() %>% ggplot(aes(x=numTitles, y=n)) +
+name_basics %>% 
+  group_by(numTitles) %>% 
+  count() %>% 
+  ggplot(aes(x = numTitles, y = n)) +
   geom_col() + 
   coord_flip()
-
-# name_basics %>%  ggplot(aes(x = primaryName, y = numTitles)) +
-#   geom_col() +
-#   coord_flip()
 ```
       
 ```{r}

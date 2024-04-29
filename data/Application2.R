@@ -3,6 +3,9 @@ library(lubridate)
 library(shiny)
 
 #THIS IS MY HOMEWORK 9 - WANT TO USE IT AS A TEMPLATE
+#In the principals table, there is a `category` column. 
+#Use this column as a primary filter to allow users to then select specific job categories. 
+#After select the specific job categories, display information from another table.
 
 homeproject_req <- homeproject %>% 
   mutate(Required = ifelse(grepl("required", JOBTYPE), "Yes", "No"))
