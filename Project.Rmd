@@ -77,7 +77,7 @@ title_basics |>
 ```  
 Based on the title type of a title the runtime (in minutes) varies, with large values in types movie and tvSeries. Types short and tvShort have the lowest runtime. All of the mean are between 0 and 500 minutes. 
 
-THe column titleType is a charachter column that is representing categorical data, the distribution of titleTypes are shown in the plot. 
+The column titleType is a charachter column that is representing categorical data, the distribution of titleTypes are shown in the plot. 
 
 ```{r}
 #names_basics
