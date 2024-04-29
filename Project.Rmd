@@ -189,9 +189,13 @@ ratings %>%
 name_basics <- name_basics |>
   mutate(numTitles = str_count(knownForTitles, ",") + 1) 
 
-ggplot(name_basics, aes(x = primaryName, y = numTitles)) +
-  geom_col() +
+name_basics %>% group_by(numTitles) %>% count() %>% ggplot(aes(x=numTitles, y=n)) +
+  geom_col() + 
   coord_flip()
+
+# name_basics %>%  ggplot(aes(x = primaryName, y = numTitles)) +
+#   geom_col() +
+#   coord_flip()
 ```
       
 ```{r}
