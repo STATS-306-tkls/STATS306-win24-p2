@@ -447,6 +447,8 @@ Several people have the highest median rating of 10, as shown in the above tibbl
 * Select a previous computation that could be improved using parallelization and implement a parallelization solution. Using `system.time` show that parallelization improves performance.
 * One task we performed involved counting items in strings separated by commas. Propose two different functions that could perform this taks. Compare them using bench marking. Which version would you recommend?
 
+
+
 ## Part VI: Shiny Applications
 
 ### Application 1
