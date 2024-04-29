@@ -12,6 +12,8 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
+library(dplyr)
+library(shiny)
 ```
 
 ## Investigating the Internet Movie Database (IMDB)
@@ -481,3 +483,100 @@ Create an app to allow users to play [Six Degrees of Kevin Bacon](https://en.wik
 Create a Shiny application where a person can type the primary title of movie or TV show. Then have app show all the people who had a role in the show. Let the user select a person in that cast and show all other people who have been in a title with that person. Repeat up to 6 times. If "Kevin Bacon" (`nconst == 'nm0000102'`) ever appears in the list, let the player know they have won! If they click more than 6 times, let them know they have lost.
 
 
+```{r}
+ui <- fluidPage(
+    titlePanel("Six Degrees of Kevin Bacon"),
+    sidebarLayout(
+        sidebarPanel(
+            textInput("title_input", "Enter a Movie or TV Show Title:"),
+            actionButton("search_button", "Search"),
+            selectInput("actor_select", "Select an Actor:", choices = NULL),
+            actionButton("next_button", "Next"),
+            textOutput("game_status")
+        ),
+        mainPanel(
+            dataTableOutput("cast_table")
+        )
+    )
+)
+
+server <- function(input, output, session) {
+    game_status <- reactiveVal("Start your search")
+    path <- reactiveVal(data.frame(nconst = character(), primaryName = character(), stringsAsFactors = FALSE))
+    selected_actors <- reactiveVal(data.frame(nconst = character(), primaryName = character(), stringsAsFactors = FALSE))
+
+    observeEvent(input$search_button, {
+        req(input$title_input)
+        selected_titles <- title_basics %>%
+            filter(str_detect(primaryTitle, regex(input$title_input, ignore_case = TRUE))) %>%
+            select(tconst) %>%
+            distinct()
+        actors <- title_principals %>%
+            filter(tconst %in% selected_titles$tconst) %>%
+            select(nconst) %>%
+            distinct() %>%
+            inner_join(name_basics, by = "nconst")
+
+        selected_actors(actors)
+        updateSelectInput(session, "actor_select", choices = setNames(actors$primaryName, actors$nconst))
+    })
+
+    observeEvent(input$next_button, {
+        req(input$actor_select)
+        current_actor <- input$actor_select
+        if (current_actor == "nm0000102") {
+            game_status("Congratulations! You found Kevin Bacon.")
+            return()
+        }
+
+        current_path <- path()
+        if (nrow(current_path) < 6) {
+            # Append the selected actor to the path
+            current_path <- rbind(current_path, selected_actors() %>% filter(nconst == current_actor))
+            path(current_path)
+
+            connected_titles <- title_principals %>%
+                filter(nconst == current_actor) %>%
+                select(tconst) %>%
+                distinct()
+
+            connected_actors <- title_principals %>%
+                filter(tconst %in% connected_titles$tconst & nconst != current_actor) %>%
+                select(nconst) %>%
+                distinct() %>%
+                inner_join(name_basics, by = "nconst")
+
+            updateSelectInput(session, "actor_select", choices = setNames(connected_actors$primaryName, connected_actors$nconst))
+            
+            game_status(paste("You are at degree", nrow(current_path), "of Kevin Bacon. Keep going!"))
+        } else {
+            game_status("Sorry, you've exceeded 6 degrees. Game over.")
+        }
+    })
+
+    output$cast_table <- renderDataTable({
+        req(input$title_input)
+        selected_titles <- title_basics %>%
+            filter(str_detect(primaryTitle, regex(input$title_input, ignore_case = TRUE))) %>%
+            select(tconst) %>%
+            distinct()
+
+        selected_cast <- title_principals %>%
+            filter(tconst %in% selected_titles$tconst) %>%
+            select(nconst) %>%
+            distinct() %>%
+            inner_join(name_basics, by = "nconst") %>%
+            select(primaryName, birthYear, primaryProfession) %>%
+            distinct() %>%
+            arrange(primaryName)
+        
+        selected_cast
+    }, options = list(pageLength = 10))
+
+    output$game_status <- renderText({
+        game_status()
+    })
+}
+
+shinyApp(ui = ui, server = server)
+```
