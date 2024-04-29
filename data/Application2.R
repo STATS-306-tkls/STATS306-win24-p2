@@ -17,17 +17,21 @@ ui <- fluidPage(
     ),
     
     mainPanel(
-      tableOutput("job_info")
+      tableOutput("actor_info")
     )
   )
 )
 
 server <- function(input, output) {
-  output$job_category <- renderUI({
-    job_categories <- unique(title_principals$job_category[title_principals$category == input$category])
-    selectInput("job_category", "Select Job Category", choices = job_categories)
+  output$actor_info <- renderTable({
+    filtered_data <- title_principals[title_principals$category == input$category, ]
+    nconsts <- filtered_data$nconst
+    match_data <- name_basics[name_basics$nconst %in% nconsts, ]
+    match_data$numTitles <- sapply(strsplit(match_data$knownForTitles, ","), length)
+    result <- match_data |>
+      select(primaryName, numTitles)
+    result
   })
-  
   
 }
 
