@@ -447,30 +447,6 @@ Several people have the highest median rating of 10, as shown in the above tibbl
 
 ## Part V: Profiling and Parallel Processing
 
-### Part (a)
-Consider a function $f(x) = -\sqrt{x} + x$. Give a number $n$, calculate $f(x)$ for any $x$ which satisfies $x \leq n$ using for loop, save the results as a vector. Let $n = 500$, print the fist 5 elements of your final results. The function `Sys.time()` can help you calculate the time. Use `Sys.sleep(0.1)` inside for loop to suspend the execution of each iteration 0.1 second. Print the running time 
-```{r}
-#f <- function(x) {
-#   return(-sqrt(x) + x)
-# }
-# 
-# results <- 0
-# n <- 500
-# start_time <- Sys.time()
-# 
-# for (x in 1:n) {
-#   result <-f(x)
-#   results<- c(results, result)
-#   Sys.sleep(0.1)
-# }
-# 
-# first_5 <- results[1:5]
-# first_5
-# end_time <- Sys.time()
-# 
-# run_time <- end_time - start_time
-# run_time
-```
 Modify your above code using parallization. Also use `Sys.sleep(0.1)` inside for loop to suspend the execution of each iteration 0.1 second. Consider to use the tools of `foreach` and `doParallel`. You can use 2 cores for this question. Print the running time. Compare with the running time in (a), what have you observed?
 
 This running time is much faster, taking half the time as in part a. 
@@ -513,6 +489,7 @@ Complete the same task above. This time use `parSapply()` instead. You do not ne
 ```{r part 5 set-up}
 library(profvis)
 library(bench)
+library(parallel)
 ```
 
 ```{r profiling}
@@ -531,7 +508,25 @@ profvis(f())
 * Select a previous computation that could be improved using parallelization and implement a parallelization solution. Using `system.time` show that parallelization improves performance.
 
 ```{r parallelization}
-summary(title_basics$startYear, na.rm = TRUE)
+cl <- makeCluster(4)
+
+start_time1 <- Sys.time()
+splits <- clusterSplit(cl, title_basics$runtimeMinutes)
+worker_output <- clusterMap(cl=cl, fun = min, splits, na.rm = TRUE)
+flatten_dbl(worker_output) %>% min()
+end_time1 <- Sys.time()
+
+total_time1 <- end_time1 - start_time1
+total_time1
+
+#other approach
+start_time2 <- Sys.time()
+min(title_basics$runtimeMinutes, na.rm=TRUE)
+end_time2 <- Sys.time()
+total_time2 <- end_time2 - start_time2
+total_time2
+
+
 ```
 
 
