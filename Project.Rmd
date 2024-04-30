@@ -19,8 +19,27 @@ library(stringr)
 
 ## Investigating the Internet Movie Database (IMDB)
 
-The [Internet Movie Database (IMDb)]() contains information on millions of movies and television programs. They offer several [non-commercial use datasets](https://developer.imdb.com/non-commercial-datasets/) (documentation link). For this proj+ect we will analyze a **sample** of 100,000 titles from the IMDBb. 
+The [Internet Movie Database (IMDb)]() contains information on millions of movies and television programs. They offer several [non-commercial use datasets](https://developer.imdb.com/non-commercial-datasets/) (documentation link). For this project we will analyze a **sample** of 100,000 titles from the IMDBb. 
 
+## Project Abstract
+
+This project analyzed and visualized the data from the IMDB. We initially tidied the data by registering "\N" as an NA value in the datasets.
+We then began basic exploratory analysis on the 4 tables - title_basics, title_principals, title_ratings, and name_basics. Basic data manipulation functions, such as "mutate" and "group_by," as well as the "ggplot" library were utilized for this section.
+We analyzed the title_basics table more in-depth in terms of its "genres" column. The column was expanded using the "pivot_longer" and "separate_rows" functions in order to visualize how genre proportions of titles varied over time. Common genre pairings within the table were also found, showing the relationships between them.
+The tables were merged in various groupings to analyze correlations. title_basics and title_ratings were joined to determine the average ratings of each genre and plot their trends. name_basics, title_ratings, and title_principals were then all joined. This allowed us to understand the trends of ratings over time for popular people and the popularity of genres within titles in the dataset.
+We continued to experiment with optimizing previous code using parallel processing and profiling. We profiled a function utilizing "group_by" and "summarize." We then used parallelization to improve the performance of finding the minimum value in a table column. Finally, we utilized benchmarking to determine the performance of 2 different functions intended to count words in a string. These optimization processes allowed us to compare ways to run code more efficiently.
+Shiny applications for users to interact with the IMDB data were then created. The first utilized widgets to allow users to explore the IMDB data with plots and sliders. The second allowed users to choose category data from the title_principals table and explored other column data from the same table based on the category.
+Lastly, a Shiny application was created to allow users to play "Six Degrees of Kevin Bacon." This was completed using reactive events, reactive buttons, and the "nconst" column in the tables.
+
+## Team
+
+Lynn Lam is a senior in the School of Information minoring in Statistics. I will be graduating after 5 years of university after next winter. I enjoy being a coffee snob, playing video games (Baldur's Gate 3 right now!), and watching horror movies.
+
+Shuxian Chen is a senior who majoring in Statistics & Data Science. I enjoy reading novels and playing video games.
+
+Katherine Zhao is a junior studying Pharmaceutical Sciences with a minor in Statistics. I enjoy dancing, playing the violin, and matching odd patterns together to create cohesively-uncohesive outfits.
+
+Tilmont "Tilly" Williams is a sophomore majoring in Statistics and minoring in German Studies. I enjoy running, knitting, and rock climbing. 
 
 ## Part I: Preprocessing
 
@@ -70,12 +89,14 @@ summary(title_basics$runtimeMinutes, na.rm = TRUE)
 
 ggplot(title_basics, aes(x = titleType, y = runtimeMinutes)) +
   geom_boxplot() +
-  coord_flip() 
+  coord_flip() +
+  labs(x = "Runtime in Minutes", y = "Title Type")
 
 title_basics |> 
   count(titleType) |>
   ggplot(aes(x = titleType, y = n)) +
-  geom_col()
+  geom_col() +
+  labs(x = "Title Type", y = "Number of Titles")
 
 ```  
 Based on the title type of a title the runtime (in minutes) varies, with large values in types movie and tvSeries. Types short and tvShort have the lowest runtime. All of the mean are between 0 and 500 minutes. 
@@ -96,29 +117,38 @@ name_basics |>
   ggplot(aes(x= deathYear, y = n)) + 
   geom_line() +
   ylim(0, 110) +
-  xlim(min_year, max_year)
+  xlim(min_year, max_year) +
+  labs(x = "Year", y = "Number of Deaths")
 ```
-The plot shows the amount of deaths in a given year. Based on the plot we can see that the number of deaths has increased
+The plot shows the amount of deaths in a given year. Based on the plot we can see that the number of deaths has increased in more recent years.
 ```{r}
 #title_ratings
 summary(title_ratings$averageRating)
 summary(title_ratings$numVotes)
 
 ggplot(title_ratings, aes(x = averageRating)) +
-  geom_histogram()
+  geom_histogram() +
+  labs(x = "Average Rating", y = "Frequency")
 
 ggplot(title_ratings, aes(x = numVotes, y = averageRating)) +
-  geom_jitter()
+  geom_jitter() +
+  labs(x = "Number of Votes", y = "Average Rating")
 ```
+The distribution of average ratings is slightly skewed left with  a median around 7.5. The values range from 1.0 - 10.0 and does not appear to have any outliers. 
+
+The plot of the Number of Votes vs. Average Rating shows that while most films have a low number of votes that are correlated with all average ratings, as the number of votes increases there is a positive linear relationship between the number of votes and the average rating. 
 
 ```{r fig.width = 15}
 #title_principals
 summary(title_principals$ordering)
 
 ggplot(title_principals, aes(x = category, y = ordering)) +
-  geom_violin()
+  geom_violin() +
+  labs(x = "Job Category", y = "Ordering")
 
 ```
+The plot of Job Category vs. Ordering shows that actors, actresses, archive footage, archive sound, and self are usually ordered first in the credits and acsting director, cinematographer, composer, director, editor, producer, production designer, and writer are ordered later on. The category with the largest range is cinematographer followed by writer. The category with the smallest range is self followed by archive sound. 
+
 
 * For the `titles_basics` table
   * use two different variables to group and explore how `runtimeMinutes` varies for these different groups. Produce appropriate summaries.
@@ -150,13 +180,14 @@ different_names
 
 #graph release year 
 ggplot(title_basics, aes(x = startYear, fill = originalTitle != primaryTitle)) +
-  geom_histogram()
+  geom_histogram() +
+  labs(x = "Year", y = "Frequency")
 ```
+The graph shows that titles are much more likely to remain the same, but since around 1960 changing the orginial title to the primary title has become more popular. 
 
 
 * For the ratings, use the `cut` function to break the data into three groups based on the average ratings. Are higher rated titles rated more often or less often than lower rated titles? 
 
-High rated titles are rated more often than Low rated titles, but less often than Medium rated titles.
 ```{r}
 ratings <- title_ratings %>%
   mutate(rating_group = cut(averageRating, breaks = c(0, 5, 8, 10), labels = c("Low", "Medium", "High")))
@@ -165,6 +196,8 @@ ratings %>%
   group_by(rating_group) %>%
   summarise(avg_numVotes = mean(numVotes), .groups = 'drop')
 ```
+High rated titles are rated more often than Low rated titles, but less often than Medium rated titles.
+
 
 * For the names table, 
   * Count the number of titles each person is known for and plot this distribution.
@@ -182,9 +215,10 @@ name_basics %>%
   count() %>% 
   ggplot(aes(x = numTitles, y = n)) +
   geom_col() + 
-  coord_flip()
+  labs(x = "Number of Titles Known For", y = "Number of People")
 ```
-      
+The plot shows the number of titles a person could be known for vs. the number of people who are known for that many titles. Most people are known for 4 titles, and few are known for 3. 
+
 ```{r}
 #age of cast members
 name_basics$birthYear <- as.integer(name_basics$birthYear)
@@ -195,13 +229,18 @@ deceased_cast <- subset(name_basics, !is.na(deathYear))
 
 #plot for deceased
 ggplot(deceased_cast, aes(x = deathYear - birthYear)) +
-  geom_histogram()
+  geom_histogram() +
+  xlim(0, 150) +
+  labs(x = "Age at Death", y = "Frequency")
 
 #plot for living 
 ggplot(living_cast, aes(x = 2024 - birthYear)) +
-  geom_histogram()
+  geom_histogram() +
+  xlim(0, 150) +
+  labs(x = "Age", y = "Frequency")
 ```
-  
+ The histogram shows the distribution of the age a person was when they died. It is slightly left skewed with a center at the median around 70. The second histogram shows the current ages of people. It is slightly right skewed with a center at the median around 50. 
+ 
     
 * Find all the actors with first names "Tom", "Thomas", "Thom" or "Tomas". How many are there?
 ```{r}
@@ -472,6 +511,7 @@ profvis(f())
 
 #the group_by action of this code took the greatest amount of time for the function to run—it could possibly be improved by running the code through parallelization to "speed up" the amount of time needed to run the summarize statistics on each group
 ```
+
 * Select a previous computation that could be improved using parallelization and implement a parallelization solution. Using `system.time` show that parallelization improves performance.
 
 ```{r parallelization}
@@ -499,7 +539,6 @@ min(title_basics$runtimeMinutes, na.rm=TRUE)
 end_time2 <- Sys.time()
 total_time2 <- end_time2 - start_time2
 total_time2
-
 
 ```
 
@@ -531,6 +570,10 @@ Using results from the previous section, create a shiny application that allows 
 ### Application 2
 
 In the principals table, there is a `category` column. Use this column as a primary filter to allow users to then select specific job categories. After select the specific job categories, display information from another table.
+```{r}
+unique(title_principals$category)
+```
+
 
 ## Extra Credit: 6 Degrees of Kevin Bacon
 
@@ -636,3 +679,11 @@ get_connected_actors <- function(current_actor) {
 
 shinyApp(ui = ui, server = server)
 ```
+
+# Statement of Effort
+
+Shuxian and Lynn completed the preprocessing.
+Shuxian, Tilly, and Katherine completed Part II.
+Lynn completed most of Part III and Part IV with assistance of the other members.
+Tilly and Katherine completed most of Part V with assistance of the other members.
+Shuxian completed most of Part VI with assistance of the other members.
