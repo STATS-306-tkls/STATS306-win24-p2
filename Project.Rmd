@@ -14,6 +14,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(dplyr)
 library(shiny)
+library(stringr)
 ```
 
 ## Investigating the Internet Movie Database (IMDB)
@@ -545,7 +546,7 @@ ui <- fluidPage(
         sidebarPanel(
             textInput("title_input", "Enter a Movie or TV Show Title:"),
             actionButton("search_button", "Search"),
-            selectInput("actor_select", "Select an Actor:", choices = NULL),
+            uiOutput("actor_dropdown"), # This will be the UI for our dynamic dropdown
             actionButton("next_button", "Next"),
             textOutput("game_status")
         ),
@@ -557,52 +558,50 @@ ui <- fluidPage(
 
 server <- function(input, output, session) {
     game_status <- reactiveVal("Start your search")
-    path <- reactiveVal(data.frame(nconst = character(), primaryName = character(), stringsAsFactors = FALSE))
-    selected_actors <- reactiveVal(data.frame(nconst = character(), primaryName = character(), stringsAsFactors = FALSE))
+    paths <- reactiveVal(data.frame(nconst = character(), primaryName = character(), stringsAsFactors = FALSE))
 
     observeEvent(input$search_button, {
         req(input$title_input)
+
         selected_titles <- title_basics %>%
             filter(str_detect(primaryTitle, regex(input$title_input, ignore_case = TRUE))) %>%
-            select(tconst) %>%
-            distinct()
-        actors <- title_principals %>%
-            filter(tconst %in% selected_titles$tconst) %>%
-            select(nconst) %>%
-            distinct() %>%
-            inner_join(name_basics, by = "nconst")
+            pull(tconst)
 
-        selected_actors(actors)
-        updateSelectInput(session, "actor_select", choices = setNames(actors$primaryName, actors$nconst))
+        actors_in_titles <- title_principals %>%
+            filter(tconst %in% selected_titles) %>%
+            inner_join(name_basics, by = "nconst") %>%
+            distinct(nconst, primaryName) %>%
+            arrange(primaryName)
+
+        output$actor_dropdown <- renderUI({
+            selectInput("actor_select", "Select an Actor:", choices = setNames(actors_in_titles$primaryName, actors_in_titles$nconst))
+        })
+        game_status("Select an actor from the cast.")
     })
 
     observeEvent(input$next_button, {
         req(input$actor_select)
         current_actor <- input$actor_select
+        
         if (current_actor == "nm0000102") {
             game_status("Congratulations! You found Kevin Bacon.")
             return()
         }
-
-        current_path <- path()
+        
+        current_path <- paths()
         if (nrow(current_path) < 6) {
-            # Append the selected actor to the path
-            current_path <- rbind(current_path, selected_actors() %>% filter(nconst == current_actor))
-            path(current_path)
-
-            connected_titles <- title_principals %>%
-                filter(nconst == current_actor) %>%
-                select(tconst) %>%
-                distinct()
-
-            connected_actors <- title_principals %>%
-                filter(tconst %in% connected_titles$tconst & nconst != current_actor) %>%
-                select(nconst) %>%
-                distinct() %>%
-                inner_join(name_basics, by = "nconst")
-
-            updateSelectInput(session, "actor_select", choices = setNames(connected_actors$primaryName, connected_actors$nconst))
+            current_path <- rbind(current_path, name_basics %>% filter(nconst == current_actor))
+            paths(current_path)
+            connected_actors <- get_connected_actors(current_actor)
             
+            if ("nm0000102" %in% connected_actors$nconst) {
+                game_status("Congratulations! You found Kevin Bacon in " %s+% nrow(current_path) %s+% " steps!")
+                return()
+            }
+            
+            output$actor_dropdown <- renderUI({
+                selectInput("actor_select", "Select an Actor:", choices = setNames(connected_actors$primaryName, connected_actors$nconst))
+            })
             game_status(paste("You are at degree", nrow(current_path), "of Kevin Bacon. Keep going!"))
         } else {
             game_status("Sorry, you've exceeded 6 degrees. Game over.")
@@ -613,24 +612,26 @@ server <- function(input, output, session) {
         req(input$title_input)
         selected_titles <- title_basics %>%
             filter(str_detect(primaryTitle, regex(input$title_input, ignore_case = TRUE))) %>%
-            select(tconst) %>%
-            distinct()
+            pull(tconst)
 
-        selected_cast <- title_principals %>%
-            filter(tconst %in% selected_titles$tconst) %>%
-            select(nconst) %>%
-            distinct() %>%
+        actors_in_titles <- title_principals %>%
+            filter(tconst %in% selected_titles) %>%
             inner_join(name_basics, by = "nconst") %>%
-            select(primaryName, birthYear, primaryProfession) %>%
-            distinct() %>%
+            distinct(nconst, primaryName, category) %>%
             arrange(primaryName)
-        
-        selected_cast
+
+        actors_in_titles
     }, options = list(pageLength = 10))
 
     output$game_status <- renderText({
         game_status()
     })
+}
+
+get_connected_actors <- function(current_actor) {
+    # Logic to find connected actors based on the selected actor's nconst
+    # This is a placeholder function and should be implemented as per your datasets
+    return(connected_actors_dataframe)
 }
 
 shinyApp(ui = ui, server = server)
